@@ -26,7 +26,7 @@ import {
   Code
 } from 'lucide-react';
 
-import Chatbot from "../components/Chatbot";
+//import Chatbot from "../components/Chatbot";
 
 // Material 3 Components with enhanced responsiveness
 const M3Card: React.FC<{ 
@@ -719,7 +719,7 @@ console.log(roadmapData);
             </div>
           </div>
         )}
-<Chatbot></Chatbot>
+
         {/* Mobile-Optimized FAB Progress */}
         <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8">
           <M3Button variant="fab" size="lg" className="w-16 h-16 md:w-20 md:h-20 shadow-2xl">

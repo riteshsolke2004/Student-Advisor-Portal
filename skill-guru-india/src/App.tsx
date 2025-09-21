@@ -18,6 +18,7 @@ import Community from "./pages/Community";
 import Onboarding  from "./pages/Onboarding";
 import JobMarket from "./pages/JobMarket";
 import { AuthProvider } from '@/contexts/AuthContext';
+import ProtectedRoute from '@/components/ProtectedRoute';
 
 const queryClient = new QueryClient();
 
@@ -38,7 +39,16 @@ const App = () => (
           <Route path="/mentorship" element={<Mentorship />} />
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/sign-up" element={<SignUp />} />
-          <Route path="/profile" element={<Profile />} />
+
+          <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+          
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/community" element={<Community/>} />
            <Route path="/onboarding" element={<Onboarding />} />

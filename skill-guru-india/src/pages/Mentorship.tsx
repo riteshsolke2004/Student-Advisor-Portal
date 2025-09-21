@@ -202,7 +202,7 @@ const AuthenticationRequired: React.FC = () => {
   );
 };
 
-// GeminiChatSection Component - INTEGRATED
+// Real GeminiChatSection Component - INTEGRATED
 const GeminiChatSection: React.FC<{ user: any }> = ({ user }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -647,7 +647,7 @@ const Mentorship = () => {
           <div className="container px-6 lg:px-8">
             <Tabs defaultValue="gemini-mentor" className="space-y-8">
               <div className="text-center">
-                <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 bg-gray-100 p-1 rounded-full">
+                <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-2 bg-gray-100 p-1 rounded-full">
                   <TabsTrigger 
                     value="gemini-mentor"
                     className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm"
@@ -664,22 +664,8 @@ const Mentorship = () => {
                     <span className="material-icons mr-2 text-base">person</span>
                     Find Mentors
                   </TabsTrigger>
-                  <TabsTrigger 
-                    value="sessions"
-                    className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                    style={{ fontFamily: 'Google Sans, sans-serif' }}
-                  >
-                    <span className="material-icons mr-2 text-base">event</span>
-                    My Sessions
-                  </TabsTrigger>
-                  <TabsTrigger 
-                    value="programs"
-                    className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                    style={{ fontFamily: 'Google Sans, sans-serif' }}
-                  >
-                    <span className="material-icons mr-2 text-base">school</span>
-                    Programs
-                  </TabsTrigger>
+                 
+                 
                 </TabsList>
               </div>
 
@@ -705,309 +691,6 @@ const Mentorship = () => {
 
                 {/* INTEGRATED REAL CHAT COMPONENT */}
                 <GeminiChatSection user={user} />
-
-                {/* AI Capabilities Section */}
-                <div className="grid md:grid-cols-3 gap-8 mt-16">
-                  <Card className="border-0 rounded-3xl shadow-lg bg-gradient-to-br from-blue-50 to-blue-100 text-center p-8">
-                    <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg">
-                      <span className="material-icons text-white text-2xl">psychology</span>
-                    </div>
-                    <h3 className="text-xl font-medium text-gray-900 mb-4" style={{ fontFamily: 'Google Sans, sans-serif' }}>
-                      Personalized Guidance
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                      Get tailored career advice based on your background, skills, and aspirations.
-                    </p>
-                  </Card>
-
-                  <Card className="border-0 rounded-3xl shadow-lg bg-gradient-to-br from-green-50 to-green-100 text-center p-8">
-                    <div className="w-16 h-16 bg-gradient-to-br from-green-600 to-green-700 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg">
-                      <span className="material-icons text-white text-2xl">quiz</span>
-                    </div>
-                    <h3 className="text-xl font-medium text-gray-900 mb-4" style={{ fontFamily: 'Google Sans, sans-serif' }}>
-                      Interview Prep
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                      Practice with realistic interview questions and get instant feedback.
-                    </p>
-                  </Card>
-
-                  <Card className="border-0 rounded-3xl shadow-lg bg-gradient-to-br from-purple-50 to-purple-100 text-center p-8">
-                    <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl mx-auto mb-6 flex items-center justify-center shadow-lg">
-                      <span className="material-icons text-white text-2xl">trending_up</span>
-                    </div>
-                    <h3 className="text-xl font-medium text-gray-900 mb-4" style={{ fontFamily: 'Google Sans, sans-serif' }}>
-                      Skill Development
-                    </h3>
-                    <p className="text-gray-600 leading-relaxed" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                      Discover the skills you need to advance in your chosen career path.
-                    </p>
-                  </Card>
-                </div>
-                {/* Gemini AI Interface */}
-                <div className="grid lg:grid-cols-3 gap-8">
-                  {/* Chat Interface */}
-                  <div className="lg:col-span-2">
-                    <Card className="border-0 rounded-3xl shadow-2xl bg-white h-[600px] flex flex-col">
-                      <CardHeader className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-purple-50 rounded-t-3xl">
-                        <div className="flex items-center gap-4">
-                          <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                            <span className="material-icons text-white text-xl">psychology</span>
-                          </div>
-                          <div>
-                            <CardTitle 
-                              className="text-xl font-medium text-gray-900"
-                              style={{ fontFamily: 'Google Sans, sans-serif' }}
-                            >
-                              Gemini Career Mentor
-                            </CardTitle>
-                            <p 
-                              className="text-sm text-gray-600"
-                              style={{ fontFamily: 'Roboto, sans-serif' }}
-                            >
-                              Your AI-powered career advisor
-                            </p>
-                          </div>
-                          <div className="ml-auto flex items-center gap-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span 
-                              className="text-sm text-green-600 font-medium"
-                              style={{ fontFamily: 'Roboto, sans-serif' }}
-                            >
-                              Online
-                            </span>
-                          </div>
-                        </div>
-                      </CardHeader>
-
-                      {/* Chat Messages Area */}
-                      <CardContent className="flex-1 p-6 overflow-y-auto space-y-6">
-                        {/* Welcome Message */}
-                        <div className="flex gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-md">
-                            <span className="material-icons text-white text-sm">smart_toy</span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl rounded-tl-sm p-4 border border-blue-200">
-                              <p 
-                                className="text-gray-800 leading-relaxed"
-                                style={{ fontFamily: 'Roboto, sans-serif' }}
-                              >
-                                👋 Hi {user?.firstName || user?.name?.split(' ')[0] || 'there'}! I'm your Gemini Career Mentor. I'm here to help you with:
-                              </p>
-                              <ul 
-                                className="mt-3 space-y-1 text-sm text-gray-700"
-                                style={{ fontFamily: 'Roboto, sans-serif' }}
-                              >
-                                <li className="flex items-center gap-2">
-                                  <span className="material-icons text-green-500 text-sm">check_circle</span>
-                                  Career path planning & transitions
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <span className="material-icons text-green-500 text-sm">check_circle</span>
-                                  Resume and interview preparation
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <span className="material-icons text-green-500 text-sm">check_circle</span>
-                                  Skill development recommendations
-                                </li>
-                                <li className="flex items-center gap-2">
-                                  <span className="material-icons text-green-500 text-sm">check_circle</span>
-                                  Industry insights and trends
-                                </li>
-                              </ul>
-                              <p 
-                                className="mt-3 text-sm text-blue-600 font-medium"
-                                style={{ fontFamily: 'Roboto, sans-serif' }}
-                              >
-                                What would you like to know about your career journey?
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Sample User Message */}
-                        <div className="flex gap-3 justify-end">
-                          <div className="max-w-[70%]">
-                            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl rounded-tr-sm p-4 text-white">
-                              <p style={{ fontFamily: 'Roboto, sans-serif' }}>
-                                I'm a computer science student interested in AI/ML careers. What skills should I focus on?
-                              </p>
-                            </div>
-                          </div>
-                          <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center shadow-md">
-                            <span className="material-icons text-white text-sm">person</span>
-                          </div>
-                        </div>
-
-                        {/* Sample AI Response */}
-                        <div className="flex gap-3">
-                          <div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center shadow-md">
-                            <span className="material-icons text-white text-sm">smart_toy</span>
-                          </div>
-                          <div className="flex-1">
-                            <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl rounded-tl-sm p-4 border border-blue-200">
-                              <p 
-                                className="text-gray-800 leading-relaxed mb-3"
-                                style={{ fontFamily: 'Roboto, sans-serif' }}
-                              >
-                                Great choice! AI/ML is a rapidly growing field. Here's my personalized roadmap for you:
-                              </p>
-                              
-                              <div className="space-y-3">
-                                <div className="bg-white rounded-xl p-3 border border-gray-200">
-                                  <h4 
-                                    className="font-medium text-blue-600 mb-2 flex items-center gap-2"
-                                    style={{ fontFamily: 'Google Sans, sans-serif' }}
-                                  >
-                                    <span className="material-icons text-sm">code</span>
-                                    Technical Skills (Priority 1)
-                                  </h4>
-                                  <div className="flex flex-wrap gap-2">
-                                    {["Python", "TensorFlow", "PyTorch", "SQL", "Statistics"].map((skill, idx) => (
-                                      <Badge key={idx} className="bg-blue-100 text-blue-700 border border-blue-200">
-                                        {skill}
-                                      </Badge>
-                                    ))}
-                                  </div>
-                                </div>
-                                
-                                <div className="bg-white rounded-xl p-3 border border-gray-200">
-                                  <h4 
-                                    className="font-medium text-green-600 mb-2 flex items-center gap-2"
-                                    style={{ fontFamily: 'Google Sans, sans-serif' }}
-                                  >
-                                    <span className="material-icons text-sm">build</span>
-                                    Next Steps
-                                  </h4>
-                                  <ul 
-                                    className="text-sm text-gray-700 space-y-1"
-                                    style={{ fontFamily: 'Roboto, sans-serif' }}
-                                  >
-                                    <li>• Build 2-3 ML projects for your portfolio</li>
-                                    <li>• Consider Google's Machine Learning Course</li>
-                                    <li>• Join AI/ML communities and competitions</li>
-                                  </ul>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-
-                      {/* Chat Input */}
-                      <div className="border-t border-gray-100 p-6">
-                        <div className="flex gap-3">
-                          <div className="flex-1 relative">
-                            <input
-                              type="text"
-                              placeholder="Ask me anything about your career..."
-                              className="w-full pl-4 pr-12 py-3 rounded-full border-2 border-gray-200 bg-white focus:outline-none focus:ring-0 focus:border-blue-500 transition-all duration-200"
-                              style={{ fontFamily: 'Roboto, sans-serif' }}
-                            />
-                            <Button className="absolute right-2 top-1/2 transform -translate-y-1/2 h-8 w-8 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 text-white p-0">
-                              <span className="material-icons text-sm">send</span>
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </Card>
-                  </div>
-
-                  {/* AI Features Sidebar */}
-                  <div className="space-y-6">
-                    {/* Quick Actions */}
-                    <Card className="border-0 rounded-3xl shadow-lg">
-                      <CardHeader className="p-6">
-                        <CardTitle 
-                          className="text-lg font-medium text-gray-900 flex items-center gap-2"
-                          style={{ fontFamily: 'Google Sans, sans-serif' }}
-                        >
-                          <span className="material-icons text-blue-600">flash_on</span>
-                          Quick Actions
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-6 pt-0 space-y-3">
-                        {[
-                          { icon: "description", text: "Resume Review", color: "blue", to: "/resume-builder" },
-                          { icon: "school", text: "Skill Assessment", color: "green", to: "/skills-analysis" },
-                          { icon: "trending_up", text: "Career Path", color: "purple", to: "/career-paths" }
-                        ].map((action, idx) => (
-                          <Button
-                            key={idx}
-                            asChild
-                            variant="outline"
-                            className="w-full justify-start h-12 rounded-2xl border-2 hover:bg-gray-50 hover:border-gray-400 transition-all duration-200"
-                            style={{ fontFamily: 'Google Sans, sans-serif' }}
-                          >
-                            <Link to={action.to}>
-                              <span className={`material-icons mr-3 text-${action.color}-600`}>{action.icon}</span>
-                              {action.text}
-                            </Link>
-                          </Button>
-                        ))}
-                      </CardContent>
-                    </Card>
-
-                    {/* AI Insights */}
-                    
-
-                    {/* Session Stats */}
-                    <Card className="border-0 rounded-3xl shadow-lg bg-gradient-to-br from-gray-50 to-gray-100">
-                      <CardContent className="p-6">
-                        <div className="text-center space-y-4">
-                          <div className="w-16 h-16 bg-gradient-to-br from-blue-600 to-purple-600 rounded-2xl mx-auto flex items-center justify-center shadow-lg">
-                            <span className="material-icons text-white text-2xl">auto_awesome</span>
-                          </div>
-                          <div>
-                            <h3 
-                              className="text-2xl font-bold text-gray-900"
-                              style={{ fontFamily: 'Google Sans, sans-serif' }}
-                            >
-                              24/7 Available
-                            </h3>
-                            <p 
-                              className="text-gray-600"
-                              style={{ fontFamily: 'Roboto, sans-serif' }}
-                            >
-                              Always here to help
-                            </p>
-                          </div>
-                          <div className="grid grid-cols-2 gap-4 pt-4">
-                            <div className="text-center">
-                              <div 
-                                className="text-lg font-bold text-blue-600"
-                                style={{ fontFamily: 'Google Sans, sans-serif' }}
-                              >
-                                1.2M+
-                              </div>
-                              <div 
-                                className="text-xs text-gray-600"
-                                style={{ fontFamily: 'Roboto, sans-serif' }}
-                              >
-                                Students Helped
-                              </div>
-                            </div>
-                            <div className="text-center">
-                              <div 
-                                className="text-lg font-bold text-green-600"
-                                style={{ fontFamily: 'Google Sans, sans-serif' }}
-                              >
-                                95%
-                              </div>
-                              <div 
-                                className="text-xs text-gray-600"
-                                style={{ fontFamily: 'Roboto, sans-serif' }}
-                              >
-                                Success Rate
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </div>
 
                 {/* AI Capabilities Section */}
                 <div className="mt-16">
@@ -1075,47 +758,7 @@ const Mentorship = () => {
                     ))}
                   </div>
                 </div>
-
-                {/* CTA Section */}
-                <Card className="border-0 rounded-3xl shadow-2xl bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 text-white mt-16">
-                  <CardContent className="p-12 text-center">
-                    <div className="max-w-3xl mx-auto space-y-6">
-                      <div className="w-20 h-20 bg-white/20 rounded-2xl mx-auto flex items-center justify-center backdrop-blur-sm">
-                        <span className="material-icons text-3xl">rocket_launch</span>
-                      </div>
-                      <h3 
-                        className="text-3xl lg:text-4xl font-normal"
-                        style={{ fontFamily: 'Google Sans, sans-serif' }}
-                      >
-                        Ready to Accelerate Your Career, {user?.firstName || 'User'}?
-                      </h3>
-                      <p 
-                        className="text-xl opacity-90 leading-relaxed"
-                        style={{ fontFamily: 'Roboto, sans-serif' }}
-                      >
-                        Start your journey with AI-powered mentorship. Get personalized guidance, 
-                        skill recommendations, and career insights tailored just for you.
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4">
-                        <Button 
-                          className="h-14 px-8 bg-white text-blue-600 hover:bg-gray-100 rounded-2xl shadow-lg text-lg font-medium"
-                          style={{ fontFamily: 'Google Sans, sans-serif' }}
-                        >
-                          <span className="material-icons mr-2">chat</span>
-                          Start Chatting Now
-                        </Button>
-                        <Button 
-                          variant="outline"
-                          className="h-14 px-8 border-2 border-white/30 text-white hover:bg-white/10 rounded-2xl backdrop-blur-sm text-lg font-medium"
-                          style={{ fontFamily: 'Google Sans, sans-serif' }}
-                        >
-                          <span className="material-icons mr-2">play_circle</span>
-                          Watch Demo
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                
               </TabsContent>
 
               {/* Find Mentors Tab */}
@@ -1197,6 +840,7 @@ const Mentorship = () => {
                             </div>
                           </div>
                         </div>
+                        
                       </CardHeader>
 
                       <CardContent className="space-y-6 p-8 pt-0">
@@ -1550,6 +1194,7 @@ const Mentorship = () => {
                             Enroll Now
                           </Button>
                         </div>
+                        
                       </CardContent>
                     </Card>
                   ))}

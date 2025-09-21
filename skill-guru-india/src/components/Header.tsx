@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { Menu, User, Bell, Search, School, LayoutDashboard, TrendingUp, FileText, Users, X, LogOut, Settings } from "lucide-react";
+import { Menu, User, Bell, Search, School, LayoutDashboard, TrendingUp, FileText, Users, X, LogOut, Settings, ChevronDown } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,13 +8,19 @@ const Header = () => {
   const { user, isAuthenticated, logout, isLoading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(3);
   const searchInputRef = useRef(null);
+  const notificationRef = useRef(null);
+  const profileMenuRef = useRef(null);
   const navigate = useNavigate();
 
-  // Sample search data - replace with your actual data source
+  // Sample search data
   const searchData = [
     { id: 1, title: "AI Career Path", type: "career", url: "/career-paths" },
     { id: 2, title: "Skills Analysis", type: "skill", url: "/skills-analysis" },
@@ -28,7 +34,53 @@ const Header = () => {
     { id: 10, title: "Interview Preparation", type: "tool", url: "/interview-prep" }
   ];
 
-  // Search function
+  // Sample notifications data
+  const sampleNotifications = [
+    {
+      id: 1,
+      title: "New Career Path Recommendation",
+      message: "Based on your profile, we found 3 new career paths that match your skills.",
+      time: "5 minutes ago",
+      type: "career",
+      read: false,
+      actionUrl: "/career-paths"
+    },
+    {
+      id: 2,
+      title: "Mentor Session Scheduled",
+      message: "Your session with Sarah Johnson is scheduled for tomorrow at 2:00 PM.",
+      time: "1 hour ago",
+      type: "mentorship",
+      read: false,
+      actionUrl: "/mentorship"
+    },
+    {
+      id: 3,
+      title: "Resume Analysis Complete",
+      message: "Your resume has been analyzed. View detailed insights and recommendations.",
+      time: "3 hours ago",
+      type: "analysis",
+      read: true,
+      actionUrl: "/resume-builder"
+    },
+    {
+      id: 4,
+      title: "Skills Assessment Available",
+      message: "A new JavaScript skills assessment is now available for you to take.",
+      time: "1 day ago",
+      type: "skill",
+      read: false,
+      actionUrl: "/skills-analysis"
+    }
+  ];
+
+  // Initialize notifications on component mount
+  useEffect(() => {
+    setNotifications(sampleNotifications);
+    setUnreadCount(sampleNotifications.filter(n => !n.read).length);
+  }, []);
+
+  // Search functionality
   const performSearch = (query) => {
     if (!query.trim()) {
       setSearchResults([]);
@@ -37,26 +89,23 @@ const Header = () => {
 
     setIsSearchLoading(true);
 
-    // Simulate API call delay
     setTimeout(() => {
       const filteredResults = searchData.filter(item =>
         item.title.toLowerCase().includes(query.toLowerCase()) ||
         item.type.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 6); // Limit to 6 results
+      ).slice(0, 6);
 
       setSearchResults(filteredResults);
       setIsSearchLoading(false);
     }, 300);
   };
 
-  // Handle search input change
   const handleSearchChange = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
     performSearch(query);
   };
 
-  // Handle search submit
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -67,7 +116,6 @@ const Header = () => {
     }
   };
 
-  // Handle result click
   const handleResultClick = (url) => {
     navigate(url);
     setIsSearchOpen(false);
@@ -75,9 +123,11 @@ const Header = () => {
     setSearchResults([]);
   };
 
-  // Toggle search modal
+  // Search modal controls
   const toggleSearch = () => {
     setIsSearchOpen(!isSearchOpen);
+    setIsNotificationOpen(false);
+    setIsProfileMenuOpen(false);
     if (!isSearchOpen) {
       setTimeout(() => searchInputRef.current?.focus(), 100);
     } else {
@@ -86,26 +136,99 @@ const Header = () => {
     }
   };
 
-  // Handle logout
+  // Notification controls
+  const toggleNotifications = () => {
+    setIsNotificationOpen(!isNotificationOpen);
+    setIsSearchOpen(false);
+    setIsProfileMenuOpen(false);
+  };
+
+  const markNotificationAsRead = (notificationId) => {
+    setNotifications(prev => prev.map(notification => 
+      notification.id === notificationId 
+        ? { ...notification, read: true }
+        : notification
+    ));
+    setUnreadCount(prev => Math.max(0, prev - 1));
+  };
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(notification => ({ ...notification, read: true })));
+    setUnreadCount(0);
+  };
+
+  const deleteNotification = (notificationId) => {
+    setNotifications(prev => prev.filter(notification => notification.id !== notificationId));
+    const deletedNotification = notifications.find(n => n.id === notificationId);
+    if (deletedNotification && !deletedNotification.read) {
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    }
+  };
+
+  const handleNotificationClick = (notification) => {
+    if (!notification.read) {
+      markNotificationAsRead(notification.id);
+    }
+    navigate(notification.actionUrl);
+    setIsNotificationOpen(false);
+  };
+
+  // Profile menu controls
+  const toggleProfileMenu = () => {
+    setIsProfileMenuOpen(!isProfileMenuOpen);
+    setIsSearchOpen(false);
+    setIsNotificationOpen(false);
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/');
     setIsMenuOpen(false);
+    setIsProfileMenuOpen(false);
   };
+
+  const handleSettings = () => {
+    navigate('/settings');
+    setIsProfileMenuOpen(false);
+  };
+
+  const handleProfile = () => {
+    navigate('/profile');
+    setIsProfileMenuOpen(false);
+  };
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+        setIsNotificationOpen(false);
+      }
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
+        setIsProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Close search on escape key
   useEffect(() => {
     const handleEscape = (e) => {
-      if (e.key === 'Escape' && isSearchOpen) {
-        setIsSearchOpen(false);
-        setSearchQuery("");
-        setSearchResults([]);
+      if (e.key === 'Escape') {
+        if (isSearchOpen) {
+          setIsSearchOpen(false);
+          setSearchQuery("");
+          setSearchResults([]);
+        }
+        if (isNotificationOpen) setIsNotificationOpen(false);
+        if (isProfileMenuOpen) setIsProfileMenuOpen(false);
       }
     };
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isSearchOpen]);
+  }, [isSearchOpen, isNotificationOpen, isProfileMenuOpen]);
 
   // Get icon for search result type
   const getResultIcon = (type) => {
@@ -116,6 +239,17 @@ const Header = () => {
       case 'mentorship': return <Users className="h-4 w-4 text-purple-600" />;
       case 'page': return <LayoutDashboard className="h-4 w-4 text-gray-600" />;
       default: return <Search className="h-4 w-4 text-gray-500" />;
+    }
+  };
+
+  // Get icon for notification type
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'career': return <span className="material-icons text-green-600 text-lg">trending_up</span>;
+      case 'mentorship': return <span className="material-icons text-purple-600 text-lg">people</span>;
+      case 'analysis': return <span className="material-icons text-blue-600 text-lg">analytics</span>;
+      case 'skill': return <span className="material-icons text-red-600 text-lg">psychology</span>;
+      default: return <span className="material-icons text-gray-600 text-lg">notifications</span>;
     }
   };
 
@@ -200,9 +334,9 @@ const Header = () => {
             </Link>
           </nav>
 
-          {/* Google Material Right Actions */}
+          {/* Right Side Actions */}
           <div className="flex items-center space-x-1">
-            {/* Google Material Search Button */}
+            {/* Search Button */}
             <div className="google-material-button hidden sm:block">
               <button
                 className="google-icon-button search-button"
@@ -214,44 +348,187 @@ const Header = () => {
               </button>
             </div>
 
-            {/* Google Material Notifications Button */}
-            <div className="google-material-button hidden sm:block">
-              <button
-                className="google-icon-button notification-button"
-                title="Notifications"
-              >
-                <span className="material-icons">notifications</span>
-                <div className="notification-badge"></div>
-                <div className="button-ripple"></div>
-              </button>
-            </div>
-
             {/* Conditional Authentication Section */}
             {!isLoading && (
               isAuthenticated ? (
-                // Authenticated User Menu
                 <>
-                  {/* Google Material Profile Button */}
-                  <div className="google-material-button hidden sm:block">
-                    <Link to="/profile" className="google-icon-button profile-button" title="Profile">
-                      <span className="material-icons">account_circle</span>
-                      <div className="button-ripple"></div>
-                    </Link>
-                  </div>
-
-                  {/* Google Material Logout Button */}
-                  <div className="google-material-button hidden sm:block">
+                  {/* Notifications Button with Dropdown */}
+                  <div className="google-material-button hidden sm:block relative" ref={notificationRef}>
                     <button
-                      className="google-icon-button logout-button"
-                      onClick={handleLogout}
-                      title="Sign Out"
+                      className="google-icon-button notification-button"
+                      onClick={toggleNotifications}
+                      title="Notifications"
                     >
-                      <span className="material-icons">logout</span>
+                      <span className="material-icons">notifications</span>
+                      {unreadCount > 0 && (
+                        <div className="notification-badge">
+                          <span className="notification-count">{unreadCount}</span>
+                        </div>
+                      )}
                       <div className="button-ripple"></div>
                     </button>
+
+                    {/* Notifications Dropdown */}
+                    {isNotificationOpen && (
+                      <div className="notification-dropdown">
+                        <div className="notification-header">
+                          <span 
+                            className="notification-title"
+                            style={{ fontFamily: 'Google Sans, sans-serif' }}
+                          >
+                            Notifications
+                          </span>
+                          <div className="notification-actions">
+                            <button
+                              className="mark-all-read-btn"
+                              onClick={markAllAsRead}
+                              disabled={unreadCount === 0}
+                              style={{ fontFamily: 'Roboto, sans-serif' }}
+                            >
+                              Mark all read
+                            </button>
+                          </div>
+                        </div>
+                        <div className="notification-list">
+                          {notifications.length > 0 ? (
+                            notifications.map((notification) => (
+                              <div
+                                key={notification.id}
+                                className={`notification-item ${notification.read ? 'read' : 'unread'}`}
+                                onClick={() => handleNotificationClick(notification)}
+                              >
+                                <div className="notification-icon">
+                                  {getNotificationIcon(notification.type)}
+                                </div>
+                                <div className="notification-content">
+                                  <div 
+                                    className="notification-item-title"
+                                    style={{ fontFamily: 'Google Sans, sans-serif' }}
+                                  >
+                                    {notification.title}
+                                  </div>
+                                  <div 
+                                    className="notification-message"
+                                    style={{ fontFamily: 'Roboto, sans-serif' }}
+                                  >
+                                    {notification.message}
+                                  </div>
+                                  <div 
+                                    className="notification-time"
+                                    style={{ fontFamily: 'Roboto, sans-serif' }}
+                                  >
+                                    {notification.time}
+                                  </div>
+                                </div>
+                                <button
+                                  className="delete-notification-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteNotification(notification.id);
+                                  }}
+                                  title="Delete notification"
+                                >
+                                  <span className="material-icons">close</span>
+                                </button>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="no-notifications">
+                              <span className="material-icons">notifications_none</span>
+                              <p style={{ fontFamily: 'Roboto, sans-serif' }}>No notifications</p>
+                            </div>
+                          )}
+                        </div>
+                        {notifications.length > 0 && (
+                          <div className="notification-footer">
+                            <Link 
+                              to="/notifications"
+                              className="view-all-btn"
+                              style={{ fontFamily: 'Google Sans, sans-serif' }}
+                              onClick={() => setIsNotificationOpen(false)}
+                            >
+                              View all notifications
+                            </Link>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Enhanced Welcome Message with Google Material Design */}
+                  {/* Profile Menu with Dropdown */}
+                  <div className="google-material-button hidden sm:block relative" ref={profileMenuRef}>
+                    <button
+                      className="google-profile-button"
+                      onClick={toggleProfileMenu}
+                      title="Account"
+                    >
+                      <div className="profile-avatar">
+                        <span 
+                          className="profile-initial"
+                          style={{ fontFamily: 'Google Sans, sans-serif' }}
+                        >
+                          {(user?.firstName || user?.name?.split(' ')[0] || 'U').charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <ChevronDown className={`profile-chevron ${isProfileMenuOpen ? 'open' : ''}`} />
+                    </button>
+
+                    {/* Profile Dropdown */}
+                    {isProfileMenuOpen && (
+                      <div className="profile-dropdown">
+                        <div className="profile-info-section">
+                          <div className="profile-avatar-large">
+                            <span 
+                              className="profile-initial-large"
+                              style={{ fontFamily: 'Google Sans, sans-serif' }}
+                            >
+                              {(user?.firstName || user?.name?.split(' ')[0] || 'U').charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="profile-details">
+                            <div 
+                              className="profile-name"
+                              style={{ fontFamily: 'Google Sans, sans-serif' }}
+                            >
+                              {user?.firstName || user?.name || 'User'}
+                            </div>
+                            <div 
+                              className="profile-email"
+                              style={{ fontFamily: 'Roboto, sans-serif' }}
+                            >
+                              {user?.email || 'user@example.com'}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="profile-menu-divider"></div>
+                        <div className="profile-menu-items">
+                          <button
+                            className="profile-menu-item"
+                            onClick={handleProfile}
+                          >
+                            <span className="material-icons">person</span>
+                            <span style={{ fontFamily: 'Roboto, sans-serif' }}>My Profile</span>
+                          </button>
+                          <button
+                            className="profile-menu-item"
+                            onClick={handleSettings}
+                          >
+                            <span className="material-icons">settings</span>
+                            <span style={{ fontFamily: 'Roboto, sans-serif' }}>Settings</span>
+                          </button>
+                          <button
+                            className="profile-menu-item logout-item"
+                            onClick={handleLogout}
+                          >
+                            <span className="material-icons">logout</span>
+                            <span style={{ fontFamily: 'Roboto, sans-serif' }}>Sign out</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Enhanced Welcome Message for Large Screens */}
                   <div className="hidden lg:flex items-center space-x-3 ml-4">
                     <div className="google-user-card">
                       <div className="user-avatar">
@@ -276,7 +553,6 @@ const Header = () => {
               ) : (
                 // Unauthenticated User Buttons
                 <>
-                  {/* Sign In Button - Gemini Gradient Border Only */}
                   <div className="gemini-border-wrapper hidden md:block">
                     <Button
                       variant="ghost"
@@ -288,7 +564,6 @@ const Header = () => {
                     </Button>
                   </div>
 
-                  {/* Get Started Button - Gemini Gradient Border Only */}
                   <div className="gemini-border-wrapper hidden md:block">
                     <Button
                       className="gemini-gradient-border h-10 px-6 bg-white text-gray-700 rounded-full border-0 relative font-medium"
@@ -302,7 +577,7 @@ const Header = () => {
               )
             )}
 
-            {/* Google Material Mobile Menu Button */}
+            {/* Mobile Menu Button */}
             <div className="google-material-button md:hidden">
               <button
                 className="google-icon-button menu-button"
@@ -316,7 +591,7 @@ const Header = () => {
           </div>
         </div>
 
-        {/* Mobile Navigation - Google Material Style */}
+        {/* Mobile Navigation */}
         {isMenuOpen && (
           <div className="md:hidden border-t border-gray-200 bg-white shadow-lg">
             <nav className="flex flex-col p-4 space-y-1">
@@ -335,10 +610,12 @@ const Header = () => {
                 </form>
               </div>
 
+              {/* Navigation Links */}
               <Link
                 to="/dashboard"
                 className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-all duration-200"
                 style={{ fontFamily: 'Roboto, sans-serif', fontWeight: '500' }}
+                onClick={() => setIsMenuOpen(false)}
               >
                 <LayoutDashboard className="h-5 w-5 text-blue-600" />
                 <span>Dashboard</span>
@@ -347,6 +624,7 @@ const Header = () => {
                 to="/career-paths"
                 className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-all duration-200"
                 style={{ fontFamily: 'Roboto, sans-serif', fontWeight: '500' }}
+                onClick={() => setIsMenuOpen(false)}
               >
                 <TrendingUp className="h-5 w-5 text-green-600" />
                 <span>Career Paths</span>
@@ -355,6 +633,7 @@ const Header = () => {
                 to="/skills-analysis"
                 className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-all duration-200"
                 style={{ fontFamily: 'Roboto, sans-serif', fontWeight: '500' }}
+                onClick={() => setIsMenuOpen(false)}
               >
                 <span className="material-icons text-lg text-red-600">psychology</span>
                 <span>Skills Analysis</span>
@@ -363,6 +642,7 @@ const Header = () => {
                 to="/resume-builder"
                 className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-all duration-200"
                 style={{ fontFamily: 'Roboto, sans-serif', fontWeight: '500' }}
+                onClick={() => setIsMenuOpen(false)}
               >
                 <FileText className="h-5 w-5 text-yellow-600" />
                 <span>Resume Builder</span>
@@ -371,6 +651,7 @@ const Header = () => {
                 to="/mentorship"
                 className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50 active:bg-gray-100 transition-all duration-200"
                 style={{ fontFamily: 'Roboto, sans-serif', fontWeight: '500' }}
+                onClick={() => setIsMenuOpen(false)}
               >
                 <Users className="h-5 w-5 text-purple-600" />
                 <span>Mentorship</span>
@@ -379,15 +660,25 @@ const Header = () => {
               {/* Mobile Authentication Section */}
               {!isLoading && (
                 isAuthenticated ? (
-                  // Authenticated mobile menu
                   <div className="flex flex-col space-y-1 pt-4 border-t border-gray-200 mt-4">
                     <Link
                       to="/profile"
                       className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50"
                       style={{ fontFamily: 'Roboto, sans-serif', fontWeight: '500' }}
+                      onClick={() => setIsMenuOpen(false)}
                     >
                       <span className="material-icons text-lg text-blue-600">account_circle</span>
                       <span>Profile</span>
+                    </Link>
+                    
+                    <Link
+                      to="/settings"
+                      className="flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-50"
+                      style={{ fontFamily: 'Roboto, sans-serif', fontWeight: '500' }}
+                      onClick={() => setIsMenuOpen(false)}
+                    >
+                      <span className="material-icons text-lg text-gray-600">settings</span>
+                      <span>Settings</span>
                     </Link>
                     
                     <button
@@ -399,7 +690,7 @@ const Header = () => {
                       <span>Sign Out</span>
                     </button>
                     
-                    {/* Enhanced Welcome message for mobile with Google design */}
+                    {/* Enhanced Welcome message for mobile */}
                     <div className="px-4 py-3 mt-2">
                       <div className="google-user-card mobile">
                         <div className="user-avatar mobile">
@@ -428,7 +719,6 @@ const Header = () => {
                     </div>
                   </div>
                 ) : (
-                  // Unauthenticated mobile buttons
                   <div className="flex space-x-3 pt-4 border-t border-gray-200 mt-4">
                     <div className="gemini-border-wrapper flex-1">
                       <Button
@@ -438,7 +728,7 @@ const Header = () => {
                         style={{ fontFamily: 'Google Sans, sans-serif', fontWeight: '500' }}
                         asChild
                       >
-                        <Link to="/sign-in">Sign In</Link>
+                        <Link to="/sign-in" onClick={() => setIsMenuOpen(false)}>Sign In</Link>
                       </Button>
                     </div>
                     <div className="gemini-border-wrapper flex-1">
@@ -448,7 +738,7 @@ const Header = () => {
                         style={{ fontFamily: 'Google Sans, sans-serif', fontWeight: '500' }}
                         asChild
                       >
-                        <Link to="/sign-up">Get Started</Link>
+                        <Link to="/sign-up" onClick={() => setIsMenuOpen(false)}>Get Started</Link>
                       </Button>
                     </div>
                   </div>
@@ -464,7 +754,6 @@ const Header = () => {
         <div className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-sm">
           <div className="container mx-auto px-6 py-20">
             <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden">
-              {/* Search Header */}
               <div className="p-6 border-b border-gray-200">
                 <form onSubmit={handleSearchSubmit} className="relative">
                   <input
@@ -491,7 +780,6 @@ const Header = () => {
                 </form>
               </div>
 
-              {/* Search Results */}
               <div className="max-h-96 overflow-y-auto">
                 {isSearchLoading ? (
                   <div className="p-8 text-center">
@@ -554,7 +842,7 @@ const Header = () => {
         </div>
       )}
 
-      {/* Enhanced Google Material Design CSS */}
+      {/* Enhanced CSS Styles */}
       <style>{`
         :root {
           --md-sys-color-primary: #1a73e8;
@@ -566,7 +854,6 @@ const Header = () => {
           --md-sys-color-on-surface: #202124;
           --md-sys-color-on-surface-variant: #5f6368;
 
-          /* Google Gemini Gradient Colors */
           --gemini-orange: #FF8A80;
           --gemini-pink: #FF80AB;
           --gemini-purple: #EA80FC;
@@ -575,7 +862,6 @@ const Header = () => {
           --gemini-green: #B9F6CA;
           --gemini-yellow: #FFFF8D;
 
-          /* Google Material Colors */
           --google-blue: #4285f4;
           --google-red: #ea4335;
           --google-yellow: #fbbc05;
@@ -626,12 +912,52 @@ const Header = () => {
           user-select: none;
         }
 
-        /* Specific button styles */
-        .search-button:hover {
-          background-color: rgba(66, 133, 244, 0.08);
-          color: var(--google-blue);
+        /* Profile Button Styles */
+        .google-profile-button {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 12px 6px 6px;
+          border-radius: 20px;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        .google-profile-button:hover {
+          background-color: rgba(66, 133, 244, 0.08);
+        }
+
+        .profile-avatar {
+          width: 28px;
+          height: 28px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, var(--google-blue), #1976d2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .profile-initial {
+          color: white;
+          font-size: 12px;
+          font-weight: 600;
+          user-select: none;
+        }
+
+        .profile-chevron {
+          width: 16px;
+          height: 16px;
+          color: var(--google-grey-600);
+          transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .profile-chevron.open {
+          transform: rotate(180deg);
+        }
+
+        /* Notification Badge */
         .notification-button {
           position: relative;
         }
@@ -643,23 +969,320 @@ const Header = () => {
 
         .notification-badge {
           position: absolute;
-          top: 8px;
-          right: 8px;
-          width: 8px;
-          height: 8px;
+          top: 6px;
+          right: 6px;
+          min-width: 16px;
+          height: 16px;
           background-color: var(--google-red);
-          border-radius: 50%;
+          border-radius: 8px;
           border: 2px solid white;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
         }
 
-        .profile-button:hover {
-          background-color: rgba(76, 175, 80, 0.08);
-          color: var(--google-green);
+        .notification-count {
+          color: white;
+          font-size: 10px;
+          font-weight: 600;
+          line-height: 1;
+          padding: 0 2px;
         }
 
-        .logout-button:hover {
-          background-color: rgba(244, 67, 54, 0.08);
+        /* Notification Dropdown */
+        .notification-dropdown {
+          position: absolute;
+          top: calc(100% + 8px);
+          right: 0;
+          width: 380px;
+          max-height: 480px;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+          border: 1px solid #e8eaed;
+          z-index: 1000;
+          overflow: hidden;
+        }
+
+        .notification-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 16px 20px;
+          border-bottom: 1px solid #e8eaed;
+        }
+
+        .notification-title {
+          font-size: 16px;
+          font-weight: 500;
+          color: #202124;
+        }
+
+        .mark-all-read-btn {
+          background: none;
+          border: none;
+          color: var(--google-blue);
+          font-size: 14px;
+          cursor: pointer;
+          padding: 4px 8px;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+        }
+
+        .mark-all-read-btn:hover:not(:disabled) {
+          background-color: rgba(66, 133, 244, 0.08);
+        }
+
+        .mark-all-read-btn:disabled {
+          color: #9aa0a6;
+          cursor: not-allowed;
+        }
+
+        .notification-list {
+          max-height: 320px;
+          overflow-y: auto;
+        }
+
+        .notification-item {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+          padding: 16px 20px;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          position: relative;
+        }
+
+        .notification-item:hover {
+          background-color: #f8f9fa;
+        }
+
+        .notification-item.unread {
+          background-color: #f0f4ff;
+        }
+
+        .notification-item.unread::before {
+          content: '';
+          position: absolute;
+          left: 20px;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 6px;
+          height: 6px;
+          background-color: var(--google-blue);
+          border-radius: 50%;
+          margin-left: -12px;
+        }
+
+        .notification-icon {
+          flex-shrink: 0;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          background-color: rgba(66, 133, 244, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .notification-content {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .notification-item-title {
+          font-size: 14px;
+          font-weight: 500;
+          color: #202124;
+          margin-bottom: 4px;
+          line-height: 1.3;
+        }
+
+        .notification-message {
+          font-size: 13px;
+          color: #5f6368;
+          line-height: 1.4;
+          margin-bottom: 4px;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
+
+        .notification-time {
+          font-size: 12px;
+          color: #9aa0a6;
+        }
+
+        .delete-notification-btn {
+          opacity: 0;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          transition: all 0.2s;
+          color: #5f6368;
+          margin-left: 8px;
+        }
+
+        .notification-item:hover .delete-notification-btn {
+          opacity: 1;
+        }
+
+        .delete-notification-btn:hover {
+          background-color: rgba(234, 67, 53, 0.08);
           color: var(--google-red);
+        }
+
+        .delete-notification-btn .material-icons {
+          font-size: 18px;
+        }
+
+        .notification-footer {
+          padding: 12px 20px;
+          border-top: 1px solid #e8eaed;
+          text-align: center;
+        }
+
+        .view-all-btn {
+          color: var(--google-blue);
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 500;
+          padding: 8px 16px;
+          border-radius: 4px;
+          transition: background-color 0.2s;
+        }
+
+        .view-all-btn:hover {
+          background-color: rgba(66, 133, 244, 0.08);
+        }
+
+        .no-notifications {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 20px;
+          color: #9aa0a6;
+        }
+
+        .no-notifications .material-icons {
+          font-size: 48px;
+          margin-bottom: 12px;
+        }
+
+        /* Profile Dropdown */
+        .profile-dropdown {
+          position: absolute;
+          top: calc(100% + 8px);
+          right: 0;
+          width: 320px;
+          background: white;
+          border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+          border: 1px solid #e8eaed;
+          z-index: 1000;
+          overflow: hidden;
+        }
+
+        .profile-info-section {
+          display: flex;
+          align-items: center;
+          gap: 16px;
+          padding: 20px;
+        }
+
+        .profile-avatar-large {
+          width: 48px;
+          height: 48px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, var(--google-blue), #1976d2);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 8px rgba(66, 133, 244, 0.3);
+        }
+
+        .profile-initial-large {
+          color: white;
+          font-size: 18px;
+          font-weight: 600;
+          user-select: none;
+        }
+
+        .profile-details {
+          flex: 1;
+          min-width: 0;
+        }
+
+        .profile-name {
+          font-size: 16px;
+          font-weight: 500;
+          color: #202124;
+          margin-bottom: 4px;
+        }
+
+        .profile-email {
+          font-size: 14px;
+          color: #5f6368;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        }
+
+        .profile-menu-divider {
+          height: 1px;
+          background-color: #e8eaed;
+          margin: 0 8px;
+        }
+
+        .profile-menu-items {
+          padding: 8px;
+        }
+
+        .profile-menu-item {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          width: 100%;
+          padding: 12px 16px;
+          border: none;
+          background: none;
+          border-radius: 8px;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          font-size: 14px;
+          color: #202124;
+          text-align: left;
+        }
+
+        .profile-menu-item:hover {
+          background-color: #f8f9fa;
+        }
+
+        .profile-menu-item.logout-item:hover {
+          background-color: rgba(234, 67, 53, 0.08);
+          color: var(--google-red);
+        }
+
+        .profile-menu-item .material-icons {
+          font-size: 20px;
+          color: #5f6368;
+        }
+
+        .profile-menu-item.logout-item .material-icons {
+          color: var(--google-red);
+        }
+
+        /* Existing styles remain the same... */
+        
+        /* Search and other button styles */
+        .search-button:hover {
+          background-color: rgba(66, 133, 244, 0.08);
+          color: var(--google-blue);
         }
 
         .menu-button:hover {
@@ -789,12 +1412,13 @@ const Header = () => {
         }
 
         /* Focus states for accessibility */
-        .google-icon-button:focus-visible {
+        .google-icon-button:focus-visible,
+        .google-profile-button:focus-visible {
           outline: 2px solid var(--google-blue);
           outline-offset: 2px;
         }
 
-        /* Gemini border styles remain the same */
+        /* Gemini border styles */
         .gemini-border-wrapper {
           position: relative;
           padding: 2px;
