@@ -20,6 +20,10 @@ from database.route import router as career_router
 from database.routes.profile_routes import router as profile_router 
 from database.routes.career_form_router import router as career_form_router
 from database.routes.career_recommendations_routes import router as career_recommendations_router
+
+# Import new resume routes
+from database.routes.resume_routes import router as resume_router
+
 # Import document routes (with fallback for development)
 try:
     from database.routes.documents_routes import router as document_router
@@ -47,7 +51,7 @@ logger = logging.getLogger(__name__)
 # Create FastAPI app
 app = FastAPI(
     title="Student Advisor Portal",
-    description="Community chat platform with Firestore backend and document management",
+    description="Community chat platform with Firestore backend and resume analysis",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -71,6 +75,11 @@ app.include_router(career_router, tags=["career"])
 app.include_router(profile_router, tags=["profile"])
 app.include_router(career_form_router, tags=["career-form"])
 app.include_router(career_recommendations_router, tags=["career-recommendations"])
+
+# Include resume analysis router
+app.include_router(resume_router, tags=["resume-analysis"])
+logger.info("✅ Resume analysis routes loaded")
+
 # Include document router if available
 if DOCUMENT_ROUTES_ENABLED:
     app.include_router(document_router, tags=["documents"])
@@ -82,6 +91,20 @@ else:
 if CHAT_ENABLED:
     app.include_router(chat_router, tags=["chat"])
     logger.info("✅ Chat routes loaded")
+
+# Debug endpoint to list all routes
+@app.get("/debug/routes")
+def list_routes():
+    """Debug endpoint to list all available routes"""
+    routes = []
+    for route in app.routes:
+        if hasattr(route, 'methods') and hasattr(route, 'path'):
+            routes.append({
+                "path": route.path,
+                "methods": list(route.methods),
+                "name": getattr(route, 'name', 'Unknown')
+            })
+    return {"routes": routes}
 
 # Root endpoint
 @app.get("/")
@@ -95,6 +118,7 @@ def root():
         "status": "running",
         "websocket_url": "/api/chat/ws/{user_id}" if CHAT_ENABLED else None,
         "docs": "/docs",
+        "debug_routes": "/debug/routes",
         "features": {
             "chat": CHAT_ENABLED,
             "authentication": True,
@@ -102,10 +126,14 @@ def root():
             "career_guidance": True,
             "profile_management": True,
             "career_forms": True,
+            "resume_analysis": True,
             "document_management": DOCUMENT_ROUTES_ENABLED,
             "file_storage": "GCP Storage" if DOCUMENT_ROUTES_ENABLED else "Not configured"
         },
         "available_endpoints": {
+            "resume_analysis": "/api/resume/analyze",
+            "resume_health": "/api/resume/health",
+            "resume_test": "/api/resume/test",
             "documents": "/api/documents/upload/{user_email}" if DOCUMENT_ROUTES_ENABLED else "Not available",
             "health": "/health",
             "docs": "/docs"
