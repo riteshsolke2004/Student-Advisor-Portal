@@ -807,72 +807,7 @@ const Mentorship = () => {
                     </Card>
 
                     {/* AI Insights */}
-                    <Card className="border-0 rounded-3xl shadow-lg">
-                      <CardHeader className="p-6">
-                        <CardTitle 
-                          className="text-lg font-medium text-gray-900 flex items-center gap-2"
-                          style={{ fontFamily: 'Google Sans, sans-serif' }}
-                        >
-                          <span className="material-icons text-purple-600">insights</span>
-                          AI Insights for {user?.firstName || 'You'}
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-6 pt-0 space-y-4">
-                        <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl p-4 border border-blue-200">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="material-icons text-blue-600 text-lg">trending_up</span>
-                            <h4 
-                              className="font-medium text-blue-700"
-                              style={{ fontFamily: 'Google Sans, sans-serif' }}
-                            >
-                              Market Trend
-                            </h4>
-                          </div>
-                          <p 
-                            className="text-sm text-blue-800"
-                            style={{ fontFamily: 'Roboto, sans-serif' }}
-                          >
-                            AI/ML roles are growing 35% faster than average in India
-                          </p>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-green-50 to-green-100 rounded-2xl p-4 border border-green-200">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="material-icons text-green-600 text-lg">lightbulb</span>
-                            <h4 
-                              className="font-medium text-green-700"
-                              style={{ fontFamily: 'Google Sans, sans-serif' }}
-                            >
-                              Personalized Tip
-                            </h4>
-                          </div>
-                          <p 
-                            className="text-sm text-green-800"
-                            style={{ fontFamily: 'Roboto, sans-serif' }}
-                          >
-                            Based on your profile, consider Google's AI certification
-                          </p>
-                        </div>
-
-                        <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-2xl p-4 border border-purple-200">
-                          <div className="flex items-center gap-3 mb-2">
-                            <span className="material-icons text-purple-600 text-lg">schedule</span>
-                            <h4 
-                              className="font-medium text-purple-700"
-                              style={{ fontFamily: 'Google Sans, sans-serif' }}
-                            >
-                              Weekly Goal
-                            </h4>
-                          </div>
-                          <p 
-                            className="text-sm text-purple-800"
-                            style={{ fontFamily: 'Roboto, sans-serif' }}
-                          >
-                            Complete 2 coding challenges this week
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
+                    
 
                     {/* Session Stats */}
                     <Card className="border-0 rounded-3xl shadow-lg bg-gradient-to-br from-gray-50 to-gray-100">

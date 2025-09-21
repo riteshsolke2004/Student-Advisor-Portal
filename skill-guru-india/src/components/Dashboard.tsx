@@ -523,32 +523,67 @@ You have a strong foundation, Shreyash, and I'm excited to see where your talent
   ];
 
   // Fetch career recommendation from backend
-  const fetchCareerRecommendation = async () => {
-    try {
-      setLoading(true);
-      
-      // Replace this with your actual API call
-      // const response = await fetch('/api/career-recommendation', {
-      //   method: 'GET',
-      //   headers: {
-      //     'Authorization': `Bearer ${token}`,
-      //     'Content-Type': 'application/json'
-      //   }
-      // });
-      // const data = await response.json();
-      
-      // For demo purposes, using sample data
-      setTimeout(() => {
-        const parsedRecommendation = parseCareerRecommendation(sampleAIResponse);
-        setCareerRecommendation(parsedRecommendation);
+ const fetchCareerRecommendation = async () => {
+  if (!user?.email) {
+    setLoading(false);
+    return;
+  }
+
+  try {
+    setLoading(true);
+    console.log(`Fetching career recommendations for: ${user.email}`);
+
+    // First, check if cached recommendations exist
+    const cachedResponse = await fetch(
+      `http://127.0.0.1:8000/api/career-recommendations/cached/${encodeURIComponent(user.email)}`
+    );
+
+    if (cachedResponse.ok) {
+      const cachedResult = await cachedResponse.json();
+      if (cachedResult.found && cachedResult.recommendations) {
+        console.log("Found cached recommendations:", cachedResult.recommendations);
+        setCareerRecommendation(cachedResult.recommendations);
         setLoading(false);
-      }, 2000);
-      
-    } catch (error) {
-      console.error('Error fetching career recommendation:', error);
-      setLoading(false);
+        return;
+      }
     }
-  };    
+
+    console.log("No cached recommendations found, generating new ones...");
+
+    // If no cached recommendations, generate new ones
+    const generateResponse = await fetch(
+      `http://127.0.0.1:8000/api/career-recommendations/generate/${encodeURIComponent(user.email)}?use_resume=true&force_refresh=false`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+   if (generateResponse.ok) {
+  const result = await generateResponse.json();
+  console.log("Generate API raw response:", result);
+  if (result.success && result.recommendations) {
+    console.log("Successfully generated recommendations:", result.recommendations);
+    setCareerRecommendation(result.recommendations);
+  } else {
+    console.error("Failed to generate recommendations:", result.error);
+    setCareerRecommendation([]);
+  }
+} else {
+  console.error("API call failed:", generateResponse.status);
+  const errorText = await generateResponse.text();
+  console.error("Error response:", errorText);
+  setCareerRecommendation([]);
+}
+  } catch (error) {
+    console.error("Error fetching career recommendation:", error);
+    setCareerRecommendation([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -671,7 +706,235 @@ You have a strong foundation, Shreyash, and I'm excited to see where your talent
             {/* Left Column - Main Content */}
             <div className="lg:col-span-2 space-y-8">
               {/* AI Career Recommendation comes FIRST */}
-              <AICareerRecommendation recommendation={loading ? null : careerRecommendation} />
+              {/* AI Career Recommendation - REPLACE YOUR EXISTING SECTION WITH THIS */}
+{(() => {
+  console.log("Career recommendation data:", careerRecommendation);
+
+  // Handle loading state
+  if (loading || careerRecommendation === null) {
+    return (
+      <Card className="border-0 rounded-3xl shadow-lg bg-white hover:shadow-xl transition-all duration-300">
+        <CardHeader className="p-8 pb-6">
+          <CardTitle 
+            className="flex items-center space-x-3 text-xl font-medium text-gray-900"
+            style={{ fontFamily: 'Google Sans, sans-serif' }}
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg">
+              <i className="material-icons text-white text-xl">psychology</i>
+            </div>
+            <span>AI Career Recommendation</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-8 pt-0">
+          <div className="flex items-center justify-center py-12">
+            <div className="text-center">
+              <div className="google-loading-spinner mb-4"></div>
+              <p className="text-gray-600" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                Analyzing your profile for personalized career recommendations...
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Handle empty or invalid recommendation data
+  if (!careerRecommendation || careerRecommendation.length === 0) {
+    return (
+      <Card className="border-0 rounded-3xl shadow-lg bg-white hover:shadow-xl transition-all duration-300">
+        <CardHeader className="p-8 pb-6">
+          <CardTitle 
+            className="flex items-center space-x-3 text-xl font-medium text-gray-900"
+            style={{ fontFamily: 'Google Sans, sans-serif' }}
+          >
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg">
+              <i className="material-icons text-white text-xl">psychology</i>
+            </div>
+            <span>AI Career Recommendation</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-8 pt-0">
+          <div className="text-center py-8">
+            <i className="material-icons text-gray-400 text-4xl mb-4">info</i>
+            <p className="text-gray-600" style={{ fontFamily: 'Roboto, sans-serif' }}>
+              No career recommendations available. Please ensure your profile is complete.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Parse the recommendation data
+  const recommendations = Array.isArray(careerRecommendation) ? careerRecommendation : [careerRecommendation];
+  const mainRecommendation = recommendations[0];
+
+  // Parse career suggestions from the reasoning field
+  let careerSuggestions = [];
+  if (mainRecommendation?.reasoning) {
+    try {
+      // Extract JSON from the reasoning field (it's wrapped in ```json```)
+      const jsonMatch = mainRecommendation.reasoning.match(/```json\n([\s\S]*?)\n```/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[1]);
+        careerSuggestions = Array.isArray(parsed) ? parsed : [parsed];
+      }
+    } catch (e) {
+      console.log("Could not parse reasoning JSON:", e);
+    }
+  }
+
+  return (
+    <Card className="border-0 rounded-3xl shadow-lg bg-white hover:shadow-xl transition-all duration-300">
+      <CardHeader className="p-8 pb-6">
+        <CardTitle 
+          className="flex items-center space-x-3 text-xl font-medium text-gray-900"
+          style={{ fontFamily: 'Google Sans, sans-serif' }}
+        >
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg">
+            <i className="material-icons text-white text-xl">psychology</i>
+          </div>
+          <span>AI Career Recommendation</span>
+        </CardTitle>
+        <CardDescription 
+          className="text-gray-600 text-lg mt-2"
+          style={{ fontFamily: 'Roboto, sans-serif' }}
+        >
+          Personalized career insights powered by AI analysis of your profile
+        </CardDescription>
+      </CardHeader>
+      
+      <CardContent className="p-8 pt-0 space-y-8">
+        {/* Main Career Suggestion */}
+        {mainRecommendation?.career_name && mainRecommendation.career_name !== "General Career Suggestion" && (
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-100">
+            <div className="flex items-start gap-4">
+              <div className="flex-shrink-0">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                  <i className="material-icons text-white">star</i>
+                </div>
+              </div>
+              <div className="flex-1">
+                <h3 
+                  className="text-xl font-semibold text-gray-900 mb-3"
+                  style={{ fontFamily: 'Google Sans, sans-serif' }}
+                >
+                  {mainRecommendation.career_name}
+                </h3>
+                {mainRecommendation.explanation && (
+                  <div 
+                    className="text-gray-700 leading-relaxed"
+                    style={{ fontFamily: 'Roboto, sans-serif' }}
+                  >
+                    <p>{mainRecommendation.explanation}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Career Suggestions from Reasoning */}
+        {careerSuggestions.length > 0 && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i className="material-icons text-blue-600 text-lg">work_outline</i>
+              </div>
+              <h4 
+                className="text-lg font-semibold text-gray-900"
+                style={{ fontFamily: 'Google Sans, sans-serif' }}
+              >
+                Top Career Recommendations for You
+              </h4>
+            </div>
+            
+            <div className="space-y-6">
+              {careerSuggestions.slice(0, 3).map((career, index) => (
+                <div key={index} className="bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-lg transition-all duration-200">
+                  <div className="flex gap-5">
+                    <div className="flex-shrink-0">
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
+                        index === 0 ? 'bg-blue-100' :
+                        index === 1 ? 'bg-green-100' :
+                        'bg-purple-100'
+                      }`}>
+                        <i className={`material-icons text-lg ${
+                          index === 0 ? 'text-blue-600' :
+                          index === 1 ? 'text-green-600' :
+                          'text-purple-600'
+                        }`}>
+                          {career.career_name.includes('Full-Stack') || career.career_name.includes('Full Stack') ? 'code' : 
+                           career.career_name.includes('Frontend') ? 'web' : 'storage'}
+                        </i>
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <h5 
+                        className="text-xl font-semibold text-gray-900 mb-3"
+                        style={{ fontFamily: 'Google Sans, sans-serif' }}
+                      >
+                        {career.career_name}
+                      </h5>
+                      
+                      {career.reasoning && (
+                      <p 
+  className="text-gray-600 text-sm mb-5 leading-relaxed"
+  style={{ fontFamily: 'Roboto, sans-serif' }}
+>
+  {career.reasoning}
+</p>
+                      )}
+                      
+                      {career.required_skills && career.required_skills.length > 0 && (
+                        <div>
+                          <h6 
+                            className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3"
+                            style={{ fontFamily: 'Roboto, sans-serif' }}
+                          >
+                            Key Skills Required
+                          </h6>
+                          <div className="flex flex-wrap gap-2">
+                            {career.required_skills.slice(0, 4).map((skill, skillIndex) => (
+                              <span
+                                key={skillIndex}
+                                className="inline-block px-3 py-2 bg-blue-50 text-blue-700 text-xs font-medium rounded-lg border border-blue-200"
+                                style={{ fontFamily: 'Roboto, sans-serif' }}
+                              >
+                                {skill}
+                              </span>
+                            ))}
+                            {career.required_skills.length > 4 && (
+                              <span className="inline-block px-3 py-2 bg-gray-100 text-gray-600 text-xs font-medium rounded-lg border border-gray-200">
+                                +{career.required_skills.length - 4} more
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Action Button */}
+        <div className="pt-6 border-t border-gray-100">
+          <button className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+            <span style={{ fontFamily: 'Google Sans, sans-serif' }}>
+              Get Detailed Career Analysis
+            </span>
+            <i className="material-icons text-lg">arrow_forward</i>
+          </button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+})()}
 
               {/* Career Progress comes SECOND */}
               <Card className="border-0 rounded-3xl shadow-lg bg-white hover:shadow-xl transition-all duration-300">

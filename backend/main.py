@@ -16,10 +16,10 @@ from users.routes import router as users_router
 from api.health import router as health_router
 from api.config import router as config_router
 from api.version import router as version_router
-from career.routes import router as career_router
+from database.route import router as career_router
 from database.routes.profile_routes import router as profile_router 
 from database.routes.career_form_router import router as career_form_router
-
+from database.routes.career_recommendations_routes import router as career_recommendations_router
 # Import document routes (with fallback for development)
 try:
     from database.routes.documents_routes import router as document_router
@@ -70,7 +70,7 @@ app.include_router(version_router, prefix="/api", tags=["version"])
 app.include_router(career_router, tags=["career"])
 app.include_router(profile_router, tags=["profile"])
 app.include_router(career_form_router, tags=["career-form"])
-
+app.include_router(career_recommendations_router, tags=["career-recommendations"])
 # Include document router if available
 if DOCUMENT_ROUTES_ENABLED:
     app.include_router(document_router, tags=["documents"])

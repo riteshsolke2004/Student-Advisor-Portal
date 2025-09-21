@@ -4,7 +4,7 @@ from pydantic import BaseModel
 import random
 
 # Remove database and auth imports for now
-from ml_service import ml_service
+from .ml_service import ml_service
 
 router = APIRouter()
 

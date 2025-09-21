@@ -305,32 +305,72 @@ const CareerPaths = () => {
     }
   };
 
-  const generateRoadmap = async (career: CareerPath) => {
-    setLoadingRoadmap(true);
-    setSelectedCareer(career);
+const generateRoadmap = async (career: CareerPath) => {
+  setLoadingRoadmap(true);
+  setSelectedCareer(career);
+  
+  try {
+    const userEmail = user?.email || 'default@example.com';
     
-    try {
-      const response = await fetch('http://localhost:8000/api/generate-career-roadmap', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: user?.firstName || user?.name || "User",
-          career_goal: career.title,
-          experience_level: "Fresher"
-        })
-      });
-      
-      const data = await response.json();
-      setRoadmapData(data);
-      setShowRoadmap(true);
-      setLoadingRoadmap(false);
-    } catch (error) {
-      console.error('Error generating roadmap:', error);
-      setLoadingRoadmap(false);
+    const response = await fetch(`http://localhost:8000/api/career-recommendations/roadmap/${encodeURIComponent(userEmail)}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  };
+    
+    const data = await response.json();
+    console.log('Full API Response:', data); // Keep this for debugging
+    
+    // Extract the roadmap data from the API response
+    const apiRoadmap = data.roadmap;
+    
+    // Transform to match your component's expected structure
+    const transformedData = {
+      user_profile: apiRoadmap.user_profile,
+      career_outlook: {
+        summary: apiRoadmap.career_outlook.summary,
+        average_salary_entry_level: "₹5-15 LPA", // Default since not in API
+        difficulty_level: "Beginner to Intermediate", // Default since not in API
+        key_industries: ["Business", "Consulting", "Operations", "Analytics"] // Default since not in API
+      },
+      roadmap: {
+        title: `${apiRoadmap.user_profile.career_goal} Learning Path`,
+        description: "Your personalized learning journey based on AI recommendations",
+        nodes: apiRoadmap.roadmap.nodes.map((node, index) => ({
+          id: node.id,
+          title: node.label,
+          type: node.type,
+          status: index === 0 ? 'current' : 'locked',
+          description: node.data?.description || `Learn and master ${node.label}`,
+          duration: "2-4 weeks",
+          position: node.position,
+          connections: index < apiRoadmap.roadmap.nodes.length - 1 ? [apiRoadmap.roadmap.nodes[index + 1].id] : [],
+          skills: node.data?.skills || [],
+          resources: (node.data?.resources || []).map(resource => ({
+            name: resource.name,
+            url: resource.url,
+            type: "Course" // Default type since your API doesn't provide it
+          })),
+          project_ideas: node.data?.project_ideas || [],
+          next_steps: node.data?.next_steps || []
+        }))
+      }
+    };
+    
+    console.log('Transformed Data:', transformedData); // Debug the transformation
+    setRoadmapData(transformedData);
+    setShowRoadmap(true);
+    setLoadingRoadmap(false);
+  } catch (error) {
+    console.error('Error generating roadmap:', error);
+    setLoadingRoadmap(false);
+  }
+};
 
   const getMatchColor = (match: number) => {
     if (match >= 85) return "text-green-600";

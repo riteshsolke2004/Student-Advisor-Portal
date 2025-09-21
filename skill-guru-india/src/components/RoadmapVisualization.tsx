@@ -26,6 +26,8 @@ import {
   Code
 } from 'lucide-react';
 
+import Chatbot from "../components/Chatbot";
+
 // Material 3 Components with enhanced responsiveness
 const M3Card: React.FC<{ 
   className?: string; 
@@ -42,6 +44,7 @@ const M3Card: React.FC<{
   };
   
   return (
+    
     <div 
       className={`rounded-2xl md:rounded-3xl transition-all duration-300 ${variants[variant]} ${className}`} 
       onClick={onClick}
@@ -229,9 +232,10 @@ const ResponsiveRoadmapWithDetails: React.FC<RoadmapVisualizationProps> = ({ roa
   };
 
   const { user_profile, career_outlook, roadmap } = roadmapData;
-
+console.log(roadmapData);
   return (
     <>
+
       {/* Google Fonts */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
@@ -715,7 +719,7 @@ const ResponsiveRoadmapWithDetails: React.FC<RoadmapVisualizationProps> = ({ roa
             </div>
           </div>
         )}
-
+<Chatbot></Chatbot>
         {/* Mobile-Optimized FAB Progress */}
         <div className="fixed bottom-4 right-4 md:bottom-8 md:right-8">
           <M3Button variant="fab" size="lg" className="w-16 h-16 md:w-20 md:h-20 shadow-2xl">
@@ -726,6 +730,7 @@ const ResponsiveRoadmapWithDetails: React.FC<RoadmapVisualizationProps> = ({ roa
           </M3Button>
         </div>
       </div>
+   
     </>
   );
 };
