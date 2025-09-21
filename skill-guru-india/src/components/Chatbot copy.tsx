@@ -54,7 +54,11 @@ interface ActionButton {
   variant?: "default" | "outline" | "secondary";
 }
 
+<<<<<<< HEAD
+const Chatbot = () => {
+=======
 const ProfessionalChatbot = () => {
+>>>>>>> a1767ff40ded6464b38930278a580011360e941d
   const [isOpen, setIsOpen] = useState(false);
   const [isMinimized, setIsMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -520,4 +524,8 @@ const ProfessionalChatbot = () => {
   );
 };
 
+<<<<<<< HEAD
+export default Chatbot;
+=======
 export default ProfessionalChatbot;
+>>>>>>> a1767ff40ded6464b38930278a580011360e941d

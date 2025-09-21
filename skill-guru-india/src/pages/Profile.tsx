@@ -539,7 +539,7 @@ const Profile = () => {
         {/* Main Content */}
         <div className="container mx-auto px-8 py-12">
           <Tabs defaultValue="overview" className="space-y-8">
-            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-4 bg-gray-100 p-1 rounded-full">
+            <TabsList className="grid w-full max-w-2xl mx-auto grid-cols-2 bg-gray-100 p-1 rounded-full">
               <TabsTrigger 
                 value="overview"
                 className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm"
@@ -556,22 +556,8 @@ const Profile = () => {
                 <span className="material-icons mr-2 text-base">school</span>
                 Academic
               </TabsTrigger>
-              <TabsTrigger 
-                value="career"
-                className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                style={{ fontFamily: 'Google Sans, sans-serif' }}
-              >
-                <span className="material-icons mr-2 text-base">work</span>
-                Career
-              </TabsTrigger>
-              <TabsTrigger 
-                value="skills"
-                className="rounded-full data-[state=active]:bg-white data-[state=active]:shadow-sm"
-                style={{ fontFamily: 'Google Sans, sans-serif' }}
-              >
-                <span className="material-icons mr-2 text-base">psychology</span>
-                Skills
-              </TabsTrigger>
+              
+             
             </TabsList>
 
             {/* Overview Tab */}
@@ -694,7 +680,7 @@ const Profile = () => {
                   </CardContent>
                 </Card>
 
-                {/* Career Information Card */}
+                {/* Career Information Card
                 <Card className="border-0 rounded-3xl shadow-lg bg-white">
                   <CardHeader className="p-8">
                     <CardTitle 
@@ -818,11 +804,10 @@ const Profile = () => {
                       </div>
                     )}
                   </CardContent>
-                </Card>
+                </Card> */}
               </div>
             </TabsContent>
 
-            {/* Academic Tab */}
             <TabsContent value="academic" className="space-y-8">
               <Card className="border-0 rounded-3xl shadow-lg bg-white">
                 <CardHeader className="p-8">

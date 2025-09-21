@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Play, Target, TrendingUp, Users, Zap, School } from "lucide-react";
+import { ArrowRight, Play, Target, TrendingUp, Users, Zap, School, BookOpen, Award, BrainCircuit } from "lucide-react";
 import { Link } from "react-router-dom";
 // Import your video from assets folder
 import advisorVideo from "@/assets/advisor-video.mp4"; // Update this filename to match your actual file name
@@ -125,65 +125,20 @@ const Hero = () => {
                 </div>
               </div>
 
-              {/* Google-style Stats with Material Icons */}
+              
+            
+
+              {/* Enhanced Google-style Stats with Student Focus */}
               <div className="grid grid-cols-3 gap-8 pt-12 border-t border-gray-200">
-                <div className="text-center group">
-                  <div className="flex items-center justify-center mb-2">
-                    <span className="material-icons text-blue-600 mr-2">school</span>
-                    <div 
-                      className="text-3xl lg:text-4xl font-medium text-gray-900"
-                      style={{ fontFamily: 'Google Sans, sans-serif' }}
-                    >
-                      50K+
-                    </div>
-                  </div>
-                  <div 
-                    className="text-sm text-gray-600 font-medium"
-                    style={{ fontFamily: 'Roboto, sans-serif' }}
-                  >
-                    Students Guided
-                  </div>
-                </div>
+               
                 
-                <div className="text-center group">
-                  <div className="flex items-center justify-center mb-2">
-                    <span className="material-icons text-green-600 mr-2">trending_up</span>
-                    <div 
-                      className="text-3xl lg:text-4xl font-medium text-gray-900"
-                      style={{ fontFamily: 'Google Sans, sans-serif' }}
-                    >
-                      95%
-                    </div>
-                  </div>
-                  <div 
-                    className="text-sm text-gray-600 font-medium"
-                    style={{ fontFamily: 'Roboto, sans-serif' }}
-                  >
-                    Success Rate
-                  </div>
-                </div>
                 
-                <div className="text-center group">
-                  <div className="flex items-center justify-center mb-2">
-                    <span className="material-icons text-yellow-600 mr-2">explore</span>
-                    <div 
-                      className="text-3xl lg:text-4xl font-medium text-gray-900"
-                      style={{ fontFamily: 'Google Sans, sans-serif' }}
-                    >
-                      500+
-                    </div>
-                  </div>
-                  <div 
-                    className="text-sm text-gray-600 font-medium"
-                    style={{ fontFamily: 'Roboto, sans-serif' }}
-                  >
-                    Career Paths
-                  </div>
-                </div>
+                
+                
               </div>
             </div>
 
-            {/* Right Video Section - UPDATED to use local video */}
+            {/* Right Video Section - Enhanced with Student-Focused Cards */}
             <div className="relative">
               <div className="relative overflow-hidden rounded-3xl shadow-2xl bg-white">
                 {/* Use the imported video from assets */}
@@ -196,34 +151,27 @@ const Hero = () => {
                   playsInline
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent"></div>
-              </div>
+              </div>  
 
-              {/* Additional Google-style notification card */}
+
+
+             
+
+              {/* Job Market Trends Card */}
               <div 
-                className="absolute top-1/2 -left-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-xl p-4 shadow-lg"
+                className="absolute bottom-1/3 -left-8 bg-white rounded-2xl p-4 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1"
                 style={{ 
-                  animation: 'slideInLeft 2s ease-out 1s both',
+                  animation: 'slideInLeft 2s ease-out 2.5s both',
                 }}
               >
-                <div className="flex items-center space-x-2">
-                  <span className="material-icons text-yellow-600">notifications_active</span>
-                  <div>
-                    <div 
-                      className="text-xs font-medium text-yellow-800"
-                      style={{ fontFamily: 'Google Sans, sans-serif' }}
-                    >
-                      AI Advisors Ready
-                    </div>
-                    <div className="text-xs text-yellow-700">3 experts available</div>
-                  </div>
-                </div>
+               
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* CSS remains the same */}
+      {/* Enhanced CSS with new animations */}
       <style>{`
         /* Original animations */
         @keyframes float {
@@ -234,6 +182,17 @@ const Hero = () => {
         @keyframes slideInLeft {
           0% { 
             transform: translateX(-100px);
+            opacity: 0;
+          }
+          100% { 
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes slideInRight {
+          0% { 
+            transform: translateX(100px);
             opacity: 0;
           }
           100% { 
@@ -384,6 +343,13 @@ const Hero = () => {
           
           .hero-gemini-gradient-border:hover {
             transform: translateY(-1px);
+          }
+          
+          /* Disable all complex animations for reduced motion */
+          * {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
           }
         }
       `}</style>

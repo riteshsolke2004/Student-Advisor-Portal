@@ -26,7 +26,11 @@ import {
   Code
 } from 'lucide-react';
 
+<<<<<<< HEAD
+//import Chatbot from "../components/Chatbot";
+=======
 
+>>>>>>> a1767ff40ded6464b38930278a580011360e941d
 
 // Material 3 Components with enhanced responsiveness
 const M3Card: React.FC<{ 
