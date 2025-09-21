@@ -9,11 +9,9 @@ import { Eye, EyeOff, Mail, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import { signInWithGoogle } from "@/services/firebase";
-import { useAuth } from "@/contexts/AuthContext";
 
 const SignUp = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -56,14 +54,6 @@ const SignUp = () => {
       if (!res.ok) throw new Error(`Sign-up failed: ${res.statusText}`);
       const data = await res.json();
       console.log("Sign-up success:", data);
-      login({
-        id: data.user?.id || data.id,
-        email: data.user?.email || formData.email,
-        name: data.user?.name || `${formData.firstName} ${formData.lastName}`,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        token: data.token
-      });
       
       alert("Account created successfully!");
       localStorage.setItem("token", data.token);
@@ -91,13 +81,6 @@ const SignUp = () => {
       if (!res.ok) throw new Error(`Backend error: ${res.statusText}`);
       const data = await res.json();
       console.log("Backend response:", data);
-      login({
-        id: data.user.id,
-        email: data.user.email,
-        name: data.user.name,
-        firstName: data.user.firstName,
-        lastName: data.user.lastName
-      });
 
       alert(data.message);
       navigate("/onboarding");

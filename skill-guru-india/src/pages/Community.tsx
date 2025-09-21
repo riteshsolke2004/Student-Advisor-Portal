@@ -393,7 +393,7 @@ const Community: React.FC = () => {
   const user = userString ? JSON.parse(userString) : null;
   const currentUser: User = user
     ? {
-        user_id: user.user_id,
+        user_id: user.email,
         username: user.firstName,
         email: user.email,
         avatar_url: "",

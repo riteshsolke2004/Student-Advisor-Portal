@@ -23,19 +23,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for existing session on app start
+  // Simple session restore on app start
   useEffect(() => {
-    const checkExistingAuth = () => {
+    const restoreSession = () => {
       try {
         const token = localStorage.getItem('token');
         const savedUser = localStorage.getItem('user');
         
         if (token && savedUser) {
           const userData = JSON.parse(savedUser);
-          setUser(userData);
+          // Restore user with token
+          setUser({ ...userData, token });
+          console.log("Session restored successfully");
         }
       } catch (error) {
-        console.error('Failed to restore authentication:', error);
+        console.error('Error restoring session:', error);
         // Clear corrupted data
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -44,22 +46,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
-    checkExistingAuth();
+    // Small delay to prevent flash
+    const timer = setTimeout(restoreSession, 100);
+    return () => clearTimeout(timer);
   }, []);
 
   const login = (userData: User) => {
+    console.log("Login called with:", userData);
+    
+    // Set user state
     setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
+    
+    // Save to localStorage
+    const userToSave = {
+      id: userData.id,
+      email: userData.email,
+      name: userData.name,
+      firstName: userData.firstName,
+      lastName: userData.lastName
+    };
+    
+    localStorage.setItem('user', JSON.stringify(userToSave));
+    
     if (userData.token) {
       localStorage.setItem('token', userData.token);
     }
+    
+    console.log("User logged in and saved to localStorage");
   };
 
   const logout = () => {
+    console.log("Logout called");
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
-    // Optional: Clear any other user-related data
     localStorage.removeItem('userPreferences');
   };
 
@@ -71,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout
   };
 
+  // Don't show loading spinner - just return children
   return (
     <AuthContext.Provider value={value}>
       {children}

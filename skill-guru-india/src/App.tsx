@@ -27,8 +27,9 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
+      <AuthProvider>
         <Chatbot />
-        <AuthProvider>
+        
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/career-paths" element={<CareerPaths />} />

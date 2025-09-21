@@ -91,6 +91,7 @@ const SignIn = () => {
       });
 
       alert(data.message);
+      localStorage.setItem("token", data.token);
       navigate("/dashboard");
     } catch (err) {
       console.error("Google sign-in failed:", err);

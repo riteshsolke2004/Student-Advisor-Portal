@@ -82,7 +82,6 @@ export const CareerInfoForm = ({ onNext, onBack, userEmail }: CareerInfoFormProp
           
           // Career Info (Optional fields)
           currentRole: formData.currentRole || "N/A",
-          experience: formData.experience || "N/A",
           industry: formData.industry || "N/A",
           expectedSalary: formData.expectedSalary || "N/A",
           preferredLocation: formData.preferredLocation || "N/A",

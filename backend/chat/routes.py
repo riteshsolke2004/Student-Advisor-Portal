@@ -73,11 +73,11 @@ async def websocket_endpoint(websocket: WebSocket, user_email: str):
                 }))
             
     except WebSocketDisconnect:
-        await manager.disconnect(user_id)
-        logger.info(f"❌ WebSocket disconnected: {user_id}")
+        await manager.disconnect(user_email)
+        logger.info(f"❌ WebSocket disconnected: {user_email}")
     except Exception as e:
-        logger.error(f"WebSocket error for {user_id}: {e}")
-        await manager.disconnect(user_id)
+        logger.error(f"WebSocket error for {user_email}: {e}")
+        await manager.disconnect(user_email)
 
 async def handle_websocket_message(user_id: str, message_data: dict):
     """Handle incoming WebSocket messages"""
