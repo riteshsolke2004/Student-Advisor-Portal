@@ -18,6 +18,7 @@ import Community from "./pages/Community";
 import Onboarding  from "./pages/Onboarding";
 import JobMarket from "./pages/JobMarket";
 import { AuthProvider } from '@/contexts/AuthContext';
+import ResumeAnalysisComponent from "./components/ResumeAnalysisComponent";
 
 const queryClient = new QueryClient();
 
@@ -43,6 +44,7 @@ const App = () => (
           <Route path="/community" element={<Community/>} />
            <Route path="/onboarding" element={<Onboarding />} />
            <Route path="/job-market" element={<JobMarket />} />
+           <Route path="/ats" element={<ResumeAnalysisComponent />} />
           
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

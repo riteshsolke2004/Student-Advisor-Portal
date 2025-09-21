@@ -2,12 +2,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Download, X } from "lucide-react";
 import RoadmapVisualization from "../components/RoadmapVisualization";
-import Chatbot from "../components/Chatbot";
+
 
 interface CareerRoadmapModalProps {
   isOpen: boolean;
   onClose: () => void;
-  roadmapData: any;
+  roadmapData;
   careerTitle: string;
 }
 
