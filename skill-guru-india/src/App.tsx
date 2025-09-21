@@ -11,7 +11,7 @@ import Mentorship from "./pages/Mentorship";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import NotFound from "./pages/NotFound";
-import Chatbot from "./components/Chatbot";
+import EnhancedChatbot from "./components/EnhancedChatbot";
 import Profile from "./pages/Profile";
 import Dashboard from "@/components/Dashboard";
 import Community from "./pages/Community";
@@ -29,7 +29,7 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
       <AuthProvider>
-        <Chatbot />
+        <EnhancedChatbot />
         
         <Routes>
           <Route path="/" element={<Index />} />
