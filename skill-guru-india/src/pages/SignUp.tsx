@@ -57,7 +57,7 @@ const SignUp = () => {
       
       alert("Account created successfully!");
       localStorage.setItem("token", data.token);
-      navigate("/profile");
+      navigate("/onboarding");
 
     } catch (err) {
       console.error(err);
@@ -83,7 +83,7 @@ const SignUp = () => {
       console.log("Backend response:", data);
 
       alert(data.message);
-      navigate("/profile");
+      navigate("/onboarding");
     } catch (err) {
       console.error("Google sign-up failed:", err);
       alert("Google Sign-Up failed. Check console for details.");

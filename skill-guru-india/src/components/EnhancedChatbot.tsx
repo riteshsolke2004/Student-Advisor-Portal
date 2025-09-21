@@ -21,8 +21,8 @@ import {
   CheckCircle,
   Mic,
   MicOff,
-  Volume2,
-  VolumeX,
+  // Volume2,
+  // VolumeX,
   Navigation,
   HelpCircle,
   Zap,
@@ -399,7 +399,7 @@ const EnhancedChatbot: React.FC = () => {
       if (data.success) {
         // Add transcription as user message
         if (data.transcript) {
-          addUserMessage(`🎤 "${data.transcript}"`);
+          addUserMessage(` "${data.transcript}"`);
         }
 
         // Add bot response
@@ -536,14 +536,14 @@ const EnhancedChatbot: React.FC = () => {
               </div>
             </div>
             <div className="flex gap-1">
-              <Button
+              {/* <Button
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-white hover:bg-white/10 rounded-lg"
                 onClick={() => setAudioEnabled(!audioEnabled)}
               >
                 {audioEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-              </Button>
+              </Button> */}
               <Button
                 variant="ghost"
                 size="icon"
@@ -730,7 +730,7 @@ const EnhancedChatbot: React.FC = () => {
                   />
                   
                   {/* Voice Button */}
-                  <Button
+                  {/* <Button
                     variant="outline"
                     size="icon"
                     className={`h-10 w-10 ${isListening ? 'bg-red-100 border-red-300' : ''}`}
@@ -742,7 +742,7 @@ const EnhancedChatbot: React.FC = () => {
                     ) : (
                       <Mic className="h-4 w-4" />
                     )}
-                  </Button>
+                  </Button> */}
                   
                   {/* Send Button */}
                   <Button
@@ -760,17 +760,17 @@ const EnhancedChatbot: React.FC = () => {
                   <div className="flex items-center gap-2">
                     {isListening && (
                       <Badge variant="secondary" className="bg-red-100 text-red-600">
-                        🎤 Listening...
+                        
                       </Badge>
                     )}
                     {audioEnabled && (
                       <Badge variant="secondary" className="bg-green-100 text-green-600">
-                        🔊 Audio On
+                       
                       </Badge>
                     )}
                     {connectionStatus === "error" && (
                       <Badge variant="secondary" className="bg-red-100 text-red-600">
-                        ❌ Connection Error
+                       
                       </Badge>
                     )}
                   </div>
