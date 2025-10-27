@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic
+langchain
+langchain-google-vertexai
+langgraph
+vertexai
+google-auth

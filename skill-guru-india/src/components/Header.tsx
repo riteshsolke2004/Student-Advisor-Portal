@@ -554,14 +554,14 @@ const Header = () => {
                 // Unauthenticated User Buttons
                 <>
                   <div className="gemini-border-wrapper hidden md:block">
-                    <Button
+                    {/* <Button
                       variant="ghost"
                       className="gemini-gradient-border h-10 px-6 bg-white text-gray-700 rounded-full border-0 relative font-medium"
                       style={{ fontFamily: 'Google Sans, sans-serif', fontWeight: '500' }}
                       asChild
                     >
                       <Link to="/sign-in">Sign In</Link>
-                    </Button>
+                    </Button> */}
                   </div>
 
                   <div className="gemini-border-wrapper hidden md:block">

@@ -105,9 +105,7 @@ const EnhancedChatbot: React.FC = () => {
   const audioChunksRef = useRef<Blob[]>([]);
 
   // ✅ FIXED: Correct API URL - should point to your backend, not the chatbot service directly
-  const API_BASE_URL = process.env.NODE_ENV === 'development' 
-    ? 'http://localhost:8000'  // Your main backend
-    : window.location.origin;   // Production backend
+ const API_BASE_URL = 'https://fastapi-backend-fixed-278398219986.asia-south1.run.app';   // Production backend
 
   // Initialize chatbot with welcome message
   useEffect(() => {

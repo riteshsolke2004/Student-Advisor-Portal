@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "electric-medium-472710-f8",
+  "private_key_id": "2328eace6ba99bb227bd8e83cfe27417cd838bab",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDRjsCkZoZ3awB3\nfqNuC0l/XneRu8NL2n8JU2eRzCahrQzoXpTVo6KD+3p/FF0qiLKa6mGJ3rDjx7vl\nZN9SUVJwetCQ0wySeTLH/OZvoOvNQmLg1a//PkNeisrGlb73WtAjiuigCkzprm/M\nzVWMAtd8ZhW984bZ/jTzyPoxvWL2DJPm3Uvxq+yi//DUdkh/RVVuvd/T1ElstaBR\nYhWVAo3+fkDsFOIdSed2YT/ARlcPgSbD4HSAGZsfYERuDP+VmTKRodEd75o/c6Pm\nDi60/u7V5k/fw8Z9aLwgE6drBO00waQkcxap0Bx5ixGA5OT3m88wFZR1d+tWjPaw\nTx9NXU9ZAgMBAAECggEAEcJZTRVrO9+TkIzo6MCIIAUveOhCqsD/lxi8ZDy64WS6\n/U5WqqxNb4X2YaKmKp6fFEXcskRvFT6uC8i6rE08AVBHMJ7SJ++hgBVMqhUnJqQD\noS461hS+vNpiSOYT4v6NORXilP2KextPWjnkkBMFlANKwGhM+1hxwF895M05/8P1\nxINl9TAsAQARJ+L1Db8PgO0s+DdAILH+OBywZ1eSIkbPVQzSmSvXxJa6hZQ8c1L8\nNTsdfb7FeDFvMvCGRXVFGF4jZjxCFGGVoHKKnF8GXPrYtHUQpP9hhrgBkS2Nb+rS\nry6POxlmKAJ8cf5vLutUwdcAp9CN4+IxMdOlli3lKQKBgQD3jrWrQA5/54L6uR+k\n1fiX3Dk+OWvlww4L4xv2A+oZJo6nFrC+bRvREyDh015b5v1UqAUUNcJK3ee6CWc/\n8oC2xnjH7ugWPgHoO9vv7eS7SMJUY3y6gkLxV8N7Mjn7Si+wfn2TZvkJWyS4vpJG\nfm+t1rLBIKztB5P2B68TaoV5fwKBgQDYtElwLVKD0SYF32mWE9x+JisfpjKJdh3/\nFbvSIRdIO4uY6ww12V3jezJlST3OAepCv/qYBe1WBNz1fu7jZ+75daWujD64bg38\n1rbaEZrze2KXT8MrmQ+NGwaAyzlyijlVXXGTaMqp9kT0WLq8GELqQqCRMkJ61NKa\nhBSwQuyzJwKBgHHZk/saDpEMK9Sa5s6sCRPuF/Vh+xlDx2X4IJfX3QWMEfcOHGK3\nUx+oKGszBiZF6SPR0eQlhSFhRHzubimeoUtto4ZvfRUdl0rynIePZK4tHBIrXuV3\nmsnbju9NfhTvXVdSFPaBWO7Ql+bO3f7Fjx7nqnXfTSgFYCq6Be5sAs6JAoGBAMgu\nYtiZRWw3PCSYqPTWDA0MPTHTWUPaNQN6lDIcF2HGf8IW/wSPc0e8emVOLyWqZzia\nF2dvsjqP631scEjprbwLja2cKCQ+pfU2c1smgDkDdaPJLsWLcu4qVOuMz9ibDzNo\nSo6dcvlmYXRGstkmoEm+mo0GHJtTFelesa3RZM5pAoGBAK9e5ymcBpV22htc7TkU\n7U0cqFQmXjpts/C0ADv6WxI5YxSa6Aa+ROSxJfWtc6QLbRszAU0iQh2KusJfikri\nMNkJvXSyTWpTnYVhPQv8Y2v73md83T5HaQYa+ZOLBweI5dmmTeV8FaQw1QGC3GVV\nOeDEN7C1o0HmoPB4XaYaCXft\n-----END PRIVATE KEY-----\n",
+  "client_email": "career-sa@electric-medium-472710-f8.iam.gserviceaccount.com",
+  "client_id": "110755500320249223365",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/career-sa%40electric-medium-472710-f8.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

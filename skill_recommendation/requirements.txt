@@ -1,0 +1,35 @@
+# --- Core Google Cloud / Vertex AI ---
+google-cloud-aiplatform>=1.38.0
+google-cloud-bigquery>=3.12.0
+google-auth>=2.20.0
+google-auth-oauthlib>=1.0.0
+google-auth-httplib2>=0.2.0
+google-api-python-client>=2.90.0
+
+# --- Vertex AI Python SDK ---
+vertexai>=1.38.0
+
+# --- Resume parsing ---
+PyPDF2>=3.0.0
+python-docx>=0.8.11
+
+# --- Data / Utils ---
+numpy>=1.24.0
+pandas>=2.0.0
+tqdm
+requests
+textract
+# --- Optional: If you plan to run orchestration with LangChain ---
+langchain
+langchain-core
+langgraph
+langchain-google-vertexai
+python-multipart
+# --- gRPC (used under the hood by Vertex AI / Matching Engine) ---
+grpcio
+fastapi
+uvicorn[standard]
+google-cloud-aiplatform
+google-cloud-bigquery
+
+

@@ -12,6 +12,7 @@ scikit-learn
 joblib==1.3.2
 uvicorn[standard]
 python-jose==3.3.0
+bcrypt==4.1.2
 passlib[bcrypt]==1.7.4
 bson
 pydantic[email]
@@ -23,3 +24,4 @@ python-magic==0.4.27  # For file type detection
 pillow==10.1.0  # For image processing/validation
 httpx
 asyncio
+python-multipart

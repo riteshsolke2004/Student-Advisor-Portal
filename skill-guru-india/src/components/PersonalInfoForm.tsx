@@ -58,7 +58,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     };
 
     const response = await axios.post(
-      `http://127.0.0.1:8000/api/profile/?user_id=${formData.email}`,
+      `https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/profile/?user_id=${formData.email}`,
       payload
     );
 

@@ -211,12 +211,11 @@ async def test_deployed_chatbot():
 # Complete fallback response system
 def get_fallback_response(request_data):
     """Complete fallback chatbot logic"""
-    
     option_id = request_data.get("option_id")
     message = request_data.get("message", "").lower() if request_data.get("message") else ""
     input_type = request_data.get("input_type", "text")
     
-    # Handle menu options
+    # Handle main menu
     if option_id == "main_menu" or (not option_id and not message):
         return {
             "success": True,
@@ -224,36 +223,17 @@ def get_fallback_response(request_data):
                 "type": "options",
                 "message": "👋 Welcome to Student Advisor Portal! I'm your AI career assistant. How can I help you today?",
                 "options": [
-                    {
-                        "id": "explore_features",
-                        "text": "🔍 Explore Platform Features",
-                        "description": "Learn about our career development tools"
-                    },
-                    {
-                        "id": "navigate_pages", 
-                        "text": "🧭 Navigate to Specific Page",
-                        "description": "Quick access to different sections"
-                    },
-                    {
-                        "id": "career_help",
-                        "text": "💼 Get Career Guidance", 
-                        "description": "Personalized career advice"
-                    },
-                    {
-                        "id": "quick_actions",
-                        "text": "⚡ Quick Actions",
-                        "description": "Popular tasks and features"
-                    },
-                    {
-                        "id": "free_text",
-                        "text": "💬 Ask Me Anything",
-                        "description": "Type your own question"
-                    }
+                    {"id": "explore_features", "text": "🔍 Explore Platform Features", "description": "Learn about our career development tools"},
+                    {"id": "navigate_pages", "text": "🧭 Navigate to Specific Page", "description": "Quick access to different sections"},
+                    {"id": "career_help", "text": "💼 Get Career Guidance", "description": "Personalized career advice"},
+                    {"id": "quick_actions", "text": "⚡ Quick Actions", "description": "Popular tasks and features"},
+                    {"id": "free_text", "text": "💬 Ask Me Anything", "description": "Type your own question"}
                 ],
                 "confidence": 95
             }
         }
     
+    # Handle explore features
     elif option_id == "explore_features":
         return {
             "success": True,
@@ -261,17 +241,18 @@ def get_fallback_response(request_data):
                 "type": "options",
                 "message": "🔍 **Platform Features** - What would you like to explore?",
                 "options": [
-                    {"id": "go_career_paths", "text": "🛤️ Career Paths", "description": "Explore career options and industry insights"},
+                    {"id": "go_career_paths", "text": "🚀 Career Paths", "description": "Explore career options and industry insights"},
                     {"id": "go_skills", "text": "🎯 Skills Analysis", "description": "Comprehensive skill assessment and development"},
                     {"id": "go_resume", "text": "📄 Resume Builder", "description": "AI-powered resume creation and ATS optimization"},
                     {"id": "go_jobs", "text": "💼 Job Market", "description": "Real-time job market trends and opportunities"},
-                    {"id": "go_mentorship", "text": "👥 Mentorship", "description": "Connect with industry professionals"},
-                    {"id": "main_menu", "text": "⬅️ Back to Main Menu"}
+                    {"id": "go_mentorship", "text": "🤝 Mentorship", "description": "Connect with industry professionals"},
+                    {"id": "main_menu", "text": "🏠 Back to Main Menu"}
                 ],
                 "confidence": 95
             }
         }
     
+    # Handle navigation
     elif option_id == "navigate_pages":
         return {
             "success": True,
@@ -279,29 +260,30 @@ def get_fallback_response(request_data):
                 "type": "options",
                 "message": "🧭 **Quick Navigation** - Where would you like to go?",
                 "options": [
-                    {"id": "go_dashboard", "text": "🏠 Dashboard", "description": "Personal career development hub"},
-                    {"id": "go_career_paths", "text": "🛤️ Career Paths", "description": "Explore career options"},
+                    {"id": "go_dashboard", "text": "📊 Dashboard", "description": "Personal career development hub"},
+                    {"id": "go_career_paths", "text": "🚀 Career Paths", "description": "Explore career options"},
                     {"id": "go_skills", "text": "🎯 Skills Analysis", "description": "Skill assessment and gap analysis"},
                     {"id": "go_resume", "text": "📄 Resume Builder", "description": "Build ATS-optimized resumes"},
                     {"id": "go_jobs", "text": "💼 Job Market", "description": "Browse job opportunities"},
-                    {"id": "go_mentorship", "text": "👥 Mentorship", "description": "Find mentors and advisors"},
-                    {"id": "go_community", "text": "🤝 Community", "description": "Peer collaboration and networking"},
-                    {"id": "go_profile", "text": "👤 Profile", "description": "Manage your account and preferences"},
-                    {"id": "main_menu", "text": "⬅️ Back to Main Menu"}
+                    {"id": "go_mentorship", "text": "🤝 Mentorship", "description": "Find mentors and advisors"},
+                    {"id": "go_community", "text": "👥 Community", "description": "Peer collaboration and networking"},
+                    {"id": "go_profile", "text": "⚙️ Profile", "description": "Manage your account and preferences"},
+                    {"id": "main_menu", "text": "🏠 Back to Main Menu"}
                 ],
                 "confidence": 95
             }
         }
     
+    # Handle career help
     elif option_id == "career_help":
         return {
             "success": True,
             "response": {
                 "type": "advice",
-                "message": "💼 **Career Guidance Available:**\n\n• **Career Planning** - Set goals and create personalized roadmaps\n• **Skill Development** - Identify skill gaps and get learning recommendations\n• **Job Search Strategy** - Market insights and opportunity discovery\n• **Resume Optimization** - ATS-friendly resume building and improvement\n• **Interview Preparation** - Practice sessions and expert feedback\n• **Networking** - Connect with mentors and industry professionals\n\nWhat specific area would you like help with today?",
+                "message": "💼 **Career Guidance Available**\n\n• **Career Planning** - Set goals and create personalized roadmaps\n• **Skill Development** - Identify skill gaps and get learning recommendations\n• **Job Search Strategy** - Market insights and opportunity discovery\n• **Resume Optimization** - ATS-friendly resume building and improvement\n• **Interview Preparation** - Practice sessions and expert feedback\n• **Networking** - Connect with mentors and industry professionals\n\nWhat specific area would you like help with today?",
                 "confidence": 95,
                 "follow_up_options": [
-                    {"id": "go_career_paths", "text": "🛤️ Explore Careers"},
+                    {"id": "go_career_paths", "text": "🚀 Explore Careers"},
                     {"id": "go_skills", "text": "🎯 Analyze Skills"},
                     {"id": "go_resume", "text": "📄 Build Resume"},
                     {"id": "go_jobs", "text": "💼 Find Jobs"},
@@ -310,40 +292,7 @@ def get_fallback_response(request_data):
             }
         }
     
-    elif option_id == "quick_actions":
-        return {
-            "success": True,
-            "response": {
-                "type": "options",
-                "message": "⚡ **Quick Actions** - Popular features and tasks:",
-                "options": [
-                    {"id": "go_skills", "text": "🎯 Take Skills Assessment", "description": "Evaluate your current abilities"},
-                    {"id": "go_resume", "text": "📊 Check Resume ATS Score", "description": "ATS compatibility analysis"},
-                    {"id": "go_jobs", "text": "💼 Browse Latest Jobs", "description": "Current job opportunities"},
-                    {"id": "go_dashboard", "text": "📈 View My Progress", "description": "Career development dashboard"},
-                    {"id": "go_mentorship", "text": "👥 Find a Mentor", "description": "Connect with industry experts"},
-                    {"id": "main_menu", "text": "⬅️ Back to Main Menu"}
-                ],
-                "confidence": 100
-            }
-        }
-    
-    elif option_id == "free_text":
-        return {
-            "success": True,
-            "response": {
-                "type": "text",
-                "message": "💬 **Ask Me Anything!** I can help you with:\n\n• Career planning and goal setting\n• Skill development and learning paths\n• Resume writing and optimization\n• Job search strategies\n• Interview preparation\n• Industry insights and trends\n• Networking and mentorship\n\nWhat would you like to know about your career development?",
-                "confidence": 90,
-                "follow_up_options": [
-                    {"id": "career_help", "text": "💼 Career Guidance"},
-                    {"id": "explore_features", "text": "🔍 Platform Features"},
-                    {"id": "main_menu", "text": "🏠 Main Menu"}
-                ]
-            }
-        }
-    
-    # Handle navigation options
+    # Handle navigation options (go_* pattern)
     elif option_id and option_id.startswith("go_"):
         page_mapping = {
             "go_dashboard": ("/dashboard", "Dashboard", "Personal career development hub with progress tracking"),
@@ -414,11 +363,11 @@ def get_fallback_response(request_data):
                 "success": True,
                 "response": {
                     "type": "text",
-                    "message": "💼 **Career & Job Search Support**\n\nI can help you:\n• Explore different career paths and opportunities\n• Understand industry trends and salary ranges\n• Find job openings that match your skills\n• Develop job search strategies\n• Prepare for interviews and networking\n\nExplore our Career Paths section for industry insights or Job Market for current opportunities.",
+                    "message": "💼 **Career & Job Search Support**\n\nI can help you:\n• Explore different career paths and opportunities\n• Understand industry trends and salary ranges\n• Find job openings that match your skills\n• Develop job search strategies\n• Prepare for interviews and networking\n\nVisit our Career Paths section for industry insights or Job Market for current opportunities.",
                     "confidence": 87,
                     "actions": [{"type": "navigate", "page": "/career-paths", "label": "Explore Career Paths"}],
                     "follow_up_options": [
-                        {"id": "go_career_paths", "text": "🛤️ Career Paths"},
+                        {"id": "go_career_paths", "text": "🚀 Career Paths"},
                         {"id": "go_jobs", "text": "💼 Job Market"},
                         {"id": "main_menu", "text": "🏠 Main Menu"}
                     ]
@@ -448,7 +397,7 @@ def get_fallback_response(request_data):
                 "success": True,
                 "response": {
                     "type": "text",
-                    "message": f"🤔 **I understand you're asking about career development.**\n\nI'm here to help with your professional growth! I can assist you with:\n\n• Career planning and goal setting\n• Skills development and assessment\n• Resume writing and optimization\n• Job search and interview preparation\n• Professional networking and mentorship\n\nCould you tell me more about what specific career help you're looking for?",
+                    "message": f"💭 I understand you're asking about career development.\n\nI'm here to help with your professional growth! I can assist you with:\n• Career planning and goal setting\n• Skills development and assessment\n• Resume writing and optimization\n• Job search and interview preparation\n• Professional networking and mentorship\n\nCan you tell me more about what specific career help you're looking for?",
                     "confidence": 75,
                     "follow_up_options": [
                         {"id": "career_help", "text": "💼 Career Guidance"},
@@ -464,7 +413,7 @@ def get_fallback_response(request_data):
         "success": True,
         "response": {
             "type": "options",
-            "message": "I'm here to help with your career development! What would you like to explore?",
+            "message": "👋 I'm here to help with your career development! What would you like to explore?",
             "options": [
                 {"id": "career_help", "text": "💼 Get Career Guidance"},
                 {"id": "explore_features", "text": "🔍 Explore Platform Features"},
@@ -474,6 +423,7 @@ def get_fallback_response(request_data):
             "confidence": 80
         }
     }
+
 
 @app.post("/api/chat/enhanced")
 async def proxy_enhanced_chat(request: dict):
@@ -715,7 +665,7 @@ def root():
         "database": "Firestore",
         "storage": "Google Cloud Storage" if DOCUMENT_ROUTES_ENABLED else "Not configured",
         "status": "running",
-        "websocket_url": "/api/chat/ws/{user_id}" if CHAT_ENABLED else None,
+        "websocket_url": "/api/chat/wss/{user_id}" if CHAT_ENABLED else None,
         "docs": "/docs",
         "debug_routes": "/debug/routes",
         "features": {
@@ -806,17 +756,3 @@ if not DOCUMENT_ROUTES_ENABLED:
                 "personal_portfolio_url": personal_portfolio_url
             }
         }
-
-# Run configuration
-if __name__ == "__main__":
-    import uvicorn
-    
-    logger.info(f"Starting server on {settings.HOST}:{settings.PORT}")
-    
-    uvicorn.run(
-        "main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.DEBUG,
-        log_level="info"
-    )

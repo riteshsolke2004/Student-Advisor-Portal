@@ -79,6 +79,11 @@ const M3Card: React.FC<M3CardProps> = ({
   );
 };
 
+
+
+
+
+
 // Fixed Material Design 3 Button Component
 interface M3ButtonProps {
   variant?: "filled" | "outlined" | "text" | "fab";
@@ -162,6 +167,118 @@ const M3Chip: React.FC<M3ChipProps> = ({
   );
 };
 
+// Component to display resource links with thumbnails
+interface ResourceLinkProps {
+  resource: Resource;
+  compact?: boolean;
+}
+
+const ResourceLink: React.FC<ResourceLinkProps> = ({ resource, compact = false }) => {
+  const [thumbnailError, setThumbnailError] = React.useState(false);
+  
+  // Check if URL is YouTube and get thumbnail
+  const getThumbnailUrl = (url: string): string | null => {
+    if (!url) return null;
+    const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/;
+    const match = url.match(youtubeRegex);
+    if (match) {
+      return `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg`;
+    }
+    return null;
+  };
+
+  // Get icon based on resource type
+  const getResourceIcon = (type: string): React.ReactNode => {
+    const iconClass = "w-4 h-4 text-white";
+    switch (type.toLowerCase()) {
+      case 'video': return <Video className={iconClass} />;
+      case 'book': return <BookOpen className={iconClass} />;
+      case 'course': return <GraduationCap className={iconClass} />;
+      case 'article': return <FileText className={iconClass} />;
+      case 'tutorial': return <Code className={iconClass} />;
+      default: return <BookOpen className={iconClass} />;
+    }
+  };
+
+  const thumbnailUrl = getThumbnailUrl(resource.url || '');
+
+  // Compact view (for small spaces)
+  if (compact) {
+    return (
+      <a
+        href={resource.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all group"
+      >
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+            {getResourceIcon(resource.type)}
+          </div>
+          <div className="flex-1 min-w-0">
+            <span className="text-gray-700 font-medium text-sm block truncate">{resource.name}</span>
+            <M3Chip variant="outlined"  className="mt-1">{resource.type}</M3Chip>
+          </div>
+        </div>
+        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-500 flex-shrink-0 ml-2" />
+      </a>
+    );
+  }
+
+  // Full view (with thumbnail if available)
+  return (
+    <a
+      href={resource.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block group"
+    >
+      <M3Card variant="outlined" className="p-4 md:p-6 hover:shadow-lg transition-all">
+        <div className="flex items-start space-x-4">
+          {/* Show thumbnail for YouTube or icon for others */}
+          <div className="flex-shrink-0">
+            {thumbnailUrl && !thumbnailError ? (
+              <div className="relative w-24 h-18 md:w-32 md:h-24 bg-gray-100 rounded-xl overflow-hidden">
+                <img
+                  src={thumbnailUrl}
+                  alt={resource.name}
+                  className="w-full h-full object-cover"
+                  onError={() => setThumbnailError(true)}
+                />
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Play className="w-8 h-8 text-white" />
+                </div>
+              </div>
+            ) : (
+              <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
+                {getResourceIcon(resource.type)}
+              </div>
+            )}
+          </div>
+
+          {/* Resource details */}
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-base md:text-lg text-gray-900 mb-2 group-hover:text-blue-600">
+              {resource.name}
+            </h4>
+            <M3Chip variant="outlined" >{resource.type}</M3Chip>
+          </div>
+
+          {/* Open button */}
+          <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-blue-500 flex-shrink-0" />
+        </div>
+      </M3Card>
+    </a>
+  );
+};
+
+
+
+
+
+
+
+
 // TypeScript Interfaces
 interface Resource {
   name: string;
@@ -213,13 +330,25 @@ interface RoadmapDataStructure {
 interface RoadmapVisualizationProps {
   isOpen: boolean;
   onClose: () => void;
-  roadmapData: {
+  roadmapData: RoadmapDataStructure | {
     success?: boolean;
     user_email?: string;
     roadmap: RoadmapDataStructure;
-  } | RoadmapDataStructure;
+  };
   careerTitle: string;
 }
+
+interface CareerRoadmapModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  roadmapData: any;
+  careerTitle: string;
+  version?: number; // Add version prop
+  lastUpdate?: string; // Add last update prop
+}
+
+
+
 
 const AdvancedRoadmapVisualization: React.FC<RoadmapVisualizationProps> = ({ 
   isOpen, 
@@ -237,8 +366,116 @@ const AdvancedRoadmapVisualization: React.FC<RoadmapVisualizationProps> = ({
   if (!isOpen || !roadmapData) return null;
 
   // Handle both data structures (direct roadmap or wrapped in response)
-  const roadmapContent = 'roadmap' in roadmapData ? roadmapData.roadmap : roadmapData;
-  const { user_profile, career_outlook, roadmap } = roadmapContent;
+  // Safely extract roadmap data with proper validation
+const getRoadmapContent = (data: any) => {
+  console.log('Processing roadmap data:', {
+    dataType: typeof data,
+    isObject: data && typeof data === 'object',
+    hasRoadmapProp: data && 'roadmap' in data,
+    hasUserProfile: data && 'user_profile' in data,
+    dataKeys: data ? Object.keys(data) : []
+  });
+
+  // If data is already the roadmap structure (has user_profile, career_outlook, roadmap)
+  if (data && typeof data === 'object' && 'user_profile' in data && 'career_outlook' in data && 'roadmap' in data) {
+    console.log('Found direct roadmap structure');
+    return data;
+  }
+  
+  // If data has a 'roadmap' property that contains the structure
+  if (data && typeof data === 'object' && 'roadmap' in data && data.roadmap) {
+    console.log('Found nested roadmap structure');
+    return data.roadmap;
+  }
+  
+  console.error('Invalid roadmap data structure:', data);
+  return null;
+};
+
+const roadmapContent = getRoadmapContent(roadmapData);
+
+// Validate and extract with fallbacks
+const user_profile = roadmapContent?.user_profile || {
+  name: 'User',
+  career_goal: 'Career Development',
+  experience_level: 'Fresher',
+  estimated_duration: '12-18 months'
+};
+
+
+const career_outlook = roadmapContent?.career_outlook || {
+  summary: 'Career outlook information will be displayed here.',
+  average_salary_entry_level: 'Varies by location and experience',
+  difficulty_level: 'Medium',
+  key_industries: []
+};
+
+const roadmap = roadmapContent?.roadmap || {
+  title: 'Learning Roadmap',
+  description: 'Your personalized learning journey',
+  nodes: []
+};
+
+
+useEffect(() => {
+  if (isOpen && roadmapData) {
+    console.log('RoadmapVisualization mounted with data:', {
+      hasValidData: !!roadmapContent,
+      hasUserProfile: !!roadmapContent?.user_profile,
+      hasCareerOutlook: !!roadmapContent?.career_outlook,
+      hasRoadmapSection: !!roadmapContent?.roadmap,
+      hasRoadmapNodes: !!roadmapContent?.roadmap?.nodes,
+      nodeCount: roadmapContent?.roadmap?.nodes?.length || 0,
+      dataStructure: roadmapContent ? Object.keys(roadmapContent) : 'invalid'
+    });
+  }
+}, [isOpen, roadmapData, roadmapContent]);
+
+
+    
+
+
+
+// Early return for invalid or missing data
+if (!isOpen || !roadmapData || !roadmapContent || !roadmap?.nodes) {
+  if (isOpen && (!roadmapData || !roadmapContent)) {
+    console.error('❌ RoadmapVisualization: Invalid data provided');
+  }
+  return null;
+}
+
+// Additional safety check for nodes
+if (roadmap.nodes.length === 0) {
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
+      <div className="bg-white rounded-3xl p-8 max-w-md mx-4 text-center">
+        <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <X className="w-8 h-8 text-red-600" />
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">No Learning Path Available</h3>
+        <p className="text-gray-600 mb-6">The roadmap data seems to be incomplete. Please try generating again.</p>
+        <button 
+          onClick={onClose}
+          className="px-6 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
 
   // Calculate progress
   useEffect(() => {
@@ -653,6 +890,9 @@ const AdvancedRoadmapVisualization: React.FC<RoadmapVisualizationProps> = ({
           <div ref={detailsRef} className="bg-gradient-to-r from-blue-50 to-purple-50 border-t-4 border-blue-600">
             <div className="max-w-7xl mx-auto px-4 md:px-8 py-6 md:py-12">
               
+
+
+              
               {/* Details Header */}
               <div className="flex items-center justify-between mb-6 md:mb-8">
                 <div className="flex items-center space-x-3 md:space-x-4">
@@ -722,6 +962,80 @@ const AdvancedRoadmapVisualization: React.FC<RoadmapVisualizationProps> = ({
                   </div>
                 </M3Card>
               )}
+{/* Resources Section */}
+{selectedNode.resources && selectedNode.resources.length > 0 && (
+  <M3Card variant="elevated" className="p-4 md:p-8 mb-8">
+    <h4 className="flex items-center text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6" style={{ fontFamily: 'Google Sans, sans-serif' }}>
+      <div className="w-6 h-6 md:w-8 md:h-8 bg-blue-500 rounded-full flex items-center justify-center mr-3 md:mr-4">
+        <BookOpen className="w-3 h-3 md:w-5 md:h-5 text-white" />
+      </div>
+      Learning Resources
+    </h4>
+    <div className="grid gap-3 md:gap-4">
+      {selectedNode.resources.map((resource, index) => (
+        <ResourceLink key={index} resource={resource} compact={false} />
+      ))}
+    </div>
+  </M3Card>
+)}
+
+{/* Project Ideas Section */}
+{selectedNode.project_ideas && selectedNode.project_ideas.length > 0 && (
+  <M3Card variant="elevated" className="p-4 md:p-8 mb-8">
+    <h4 className="flex items-center text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6" style={{ fontFamily: 'Google Sans, sans-serif' }}>
+      <div className="w-6 h-6 md:w-8 md:h-8 bg-purple-500 rounded-full flex items-center justify-center mr-3 md:mr-4">
+        <Lightbulb className="w-3 h-3 md:w-5 md:h-5 text-white" />
+      </div>
+      Project Ideas
+    </h4>
+    <div className="grid gap-3 md:gap-4">
+      {selectedNode.project_ideas.map((project, index) => (
+        <M3Card key={index} variant="filled" className="p-3 md:p-4 hover:shadow-lg transition-all duration-200">
+          <div className="flex items-center space-x-3 md:space-x-4">
+            <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">
+              {index + 1}
+            </div>
+            <span className="font-medium text-gray-900 text-sm md:text-lg" style={{ fontFamily: 'Google Sans, sans-serif' }}>
+              {project}
+            </span>
+          </div>
+        </M3Card>
+      ))}
+    </div>
+  </M3Card>
+)}
+
+{/* Next Steps Section */}
+{selectedNode.next_steps && selectedNode.next_steps.length > 0 && (
+  <M3Card variant="elevated" className="p-4 md:p-8 mb-8">
+    <h4 className="flex items-center text-xl md:text-2xl font-semibold text-gray-900 mb-4 md:mb-6" style={{ fontFamily: 'Google Sans, sans-serif' }}>
+      <div className="w-6 h-6 md:w-8 md:h-8 bg-green-500 rounded-full flex items-center justify-center mr-3 md:mr-4">
+        <ArrowRight className="w-3 h-3 md:w-5 md:h-5 text-white" />
+      </div>
+      Next Steps
+    </h4>
+    <div className="grid gap-3 md:gap-4">
+      {selectedNode.next_steps.map((step, index) => (
+        <M3Card key={index} variant="filled" className="p-3 md:p-4 hover:shadow-lg transition-all duration-200">
+          <div className="flex items-center space-x-3 md:space-x-4">
+            <div className="w-2 h-2 md:w-3 md:h-3 bg-gradient-to-r from-green-500 to-blue-500 rounded-full" />
+            <span className="font-medium text-gray-900 text-sm md:text-lg" style={{ fontFamily: 'Google Sans, sans-serif' }}>
+              {step}
+            </span>
+          </div>
+        </M3Card>
+      ))}
+    </div>
+  </M3Card>
+)}
+
+
+
+
+
+
+
+
             </div>
           </div>
         )}

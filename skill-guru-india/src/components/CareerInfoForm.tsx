@@ -91,7 +91,7 @@ export const CareerInfoForm = ({ onNext, onBack, userEmail }: CareerInfoFormProp
       console.log("📦 Sending payload:", JSON.stringify(payload, null, 2));
 
       const response = await fetch(
-        `http://127.0.0.1:8000/api/career-form/academic-background/${userEmail}`,
+        `https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/career-form/academic-background/${userEmail}`,
         {
           method: "POST",
           headers: { 

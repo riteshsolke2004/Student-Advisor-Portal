@@ -180,7 +180,7 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
       console.log("📦 Uploading documents...");
 
       const response = await fetch(
-        `http://127.0.0.1:8000/api/documents/upload/${userEmail}`,
+        `https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/documents/upload/${userEmail}`,
         {
           method: "POST",
           body: formDataPayload,

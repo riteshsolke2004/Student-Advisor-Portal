@@ -1,4 +1,5 @@
 from functools import lru_cache
+from typing import Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
@@ -19,8 +20,8 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = ""
 
     # Firebase Configuration
-    FIREBASE_PROJECT_ID: str | None = None
-    FIREBASE_CREDENTIALS: str | None = None
+    FIREBASE_PROJECT_ID: Optional[str] = None
+    FIREBASE_CREDENTIALS: Optional[str] = None
     FIREBASE_SERVICE_ACCOUNT_PATH: str = "serviceAccountKey.json"
 
     # Application Limits

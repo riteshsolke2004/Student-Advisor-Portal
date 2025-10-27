@@ -215,9 +215,9 @@ const useWebSocket = (userId: string, onMessage: (msg: Message) => void, onNotif
     if (reconnectAttempts.current >= maxReconnectAttempts) {
       return;
     }
-
+// may be error due to change in the url ws://local..
     try {
-      const wsUrl = `ws://localhost:8000/api/chat/ws/${encodeURIComponent(userId)}`;
+      const wsUrl = `wss://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/chat/wss/${encodeURIComponent(userId)}`;
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
@@ -272,7 +272,7 @@ const useWebSocket = (userId: string, onMessage: (msg: Message) => void, onNotif
       };
 
     } catch (error) {
-      console.error('Failed to create WebSocket:', error);
+      console.error('Failed to create WebSocket this is the error i am in the community:', error);
     }
   });
 
@@ -523,7 +523,7 @@ const Community: React.FC = () => {
       formData.append('sender_id', currentUser.user_id);
       
       try {
-        const response = await fetch('http://localhost:8000/api/chat/upload', {
+        const response = await fetch('https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/chat/upload', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -702,7 +702,7 @@ const Community: React.FC = () => {
   // API functions
   const fetchRooms = React.useCallback(async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/chat/rooms');
+      const response = await fetch('https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/chat/rooms');
       const data = await response.json();
       setRooms(data);
       if (data.length > 0 && !activeRoom) {
@@ -720,7 +720,7 @@ const Community: React.FC = () => {
 
   const fetchMessages = React.useCallback(async (roomId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/chat/rooms/${roomId}/messages`);
+      const response = await fetch(`https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/chat/rooms/${roomId}/messages`);
       const data = await response.json();
       setMessages(data);
     } catch (error) {
@@ -733,7 +733,7 @@ const Community: React.FC = () => {
     if (!newRoomName.trim()) return;
 
     try {
-      const response = await fetch('http://localhost:8000/api/chat/rooms', {
+      const response = await fetch('https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/chat/rooms', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -1107,7 +1107,7 @@ const Community: React.FC = () => {
                       className="text-4xl font-medium text-gray-900"
                       style={{ fontFamily: 'Google Sans, sans-serif' }}
                     >
-                      Student Community
+                      Student Community 
                     </h1>
                     <p 
                       className="text-lg text-gray-600"

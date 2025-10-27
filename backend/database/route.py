@@ -76,22 +76,4 @@ async def get_career_paths():
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error: {str(e)}")
 
-@router.post("/api/generate-career-roadmap")
-async def generate_career_roadmap(request: CareerAssessmentRequest):
-    """Generate career roadmap using your test JSON data (no auth needed)"""
-    
-    try:
-        # Prepare input for ML service
-        ml_input = {
-            "name": request.name,
-            "career_goal": request.career_goal,
-            "experience_level": request.experience_level
-        }
-        
-        # Get roadmap from ML service (returns your test JSON)
-        roadmap_data = await ml_service.generate_career_roadmap(ml_input)
-        
-        return roadmap_data
-        
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generating roadmap: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error: {str(e)}")

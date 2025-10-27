@@ -56,6 +56,7 @@ import {
   RotateCcw,
   Settings
 } from "lucide-react";
+import AdvancedRoadmapVisualization from '../components/RoadmapVisualization';
 
 // Enhanced Material Design 3 Components
 interface M3CardProps {
@@ -99,6 +100,32 @@ const M3Card: React.FC<M3CardProps> = ({
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 interface M3ButtonProps {
   variant?: "filled" | "outlined" | "text" | "fab" | "gradient" | "ghost";
@@ -249,6 +276,127 @@ const ProgressRing: React.FC<{ progress: number; size?: number; strokeWidth?: nu
     </div>
   );
 };
+
+
+// Component to display resource links with thumbnails
+interface ResourceLinkProps {
+  resource: Resource;
+  compact?: boolean;
+}
+
+const ResourceLink: React.FC<ResourceLinkProps> = ({ resource, compact = false }) => {
+  const [thumbnailError, setThumbnailError] = useState(false);
+  
+  // Check if URL is YouTube and get thumbnail
+  const getThumbnailUrl = (url: string): string | null => {
+    const youtubeRegex = /(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/;
+    const match = url.match(youtubeRegex);
+    if (match) {
+      return `https://img.youtube.com/vi/${match[1]}/mqdefault.jpg`;
+    }
+    return null;
+  };
+
+  // Get icon based on resource type
+  const getResourceIcon = (type: string) => {
+    switch (type.toLowerCase()) {
+      case 'video': return <Video className="w-4 h-4 text-white" />;
+      case 'book': return <BookOpen className="w-4 h-4 text-white" />;
+      case 'course': return <GraduationCap className="w-4 h-4 text-white" />;
+      case 'article': return <FileText className="w-4 h-4 text-white" />;
+      case 'tutorial': return <Code className="w-4 h-4 text-white" />;
+      default: return <BookOpen className="w-4 h-4 text-white" />;
+    }
+  };
+
+  const thumbnailUrl = getThumbnailUrl(resource.url);
+
+  // Compact view (for small spaces)
+  if (compact) {
+    return (
+      <a
+        href={resource.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center justify-between p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-all group"
+      >
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+            {getResourceIcon(resource.type)}
+          </div>
+          <span className="text-gray-700 font-medium text-sm">{resource.name}</span>
+          <M3Chip variant="outlined" size="sm">{resource.type}</M3Chip>
+        </div>
+        <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-blue-500" />
+      </a>
+    );
+  }
+
+  // Full view (with thumbnail if available)
+  return (
+    <a
+      href={resource.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="block group"
+    >
+      <M3Card variant="outlined" className="p-4 md:p-6 hover:shadow-lg transition-all">
+        <div className="flex items-start space-x-4">
+          {/* Show thumbnail for YouTube or icon for others */}
+          <div className="flex-shrink-0">
+            {thumbnailUrl && !thumbnailError ? (
+              <div className="relative w-24 h-18 md:w-32 md:h-24 bg-gray-100 rounded-xl overflow-hidden">
+                <img
+                  src={thumbnailUrl}
+                  alt={resource.name}
+                  className="w-full h-full object-cover"
+                  onError={() => setThumbnailError(true)}
+                />
+                <div className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Play className="w-8 h-8 text-white" />
+                </div>
+              </div>
+            ) : (
+              <div className="w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center">
+                {getResourceIcon(resource.type)}
+              </div>
+            )}
+          </div>
+
+          {/* Resource details */}
+          <div className="flex-1">
+            <h4 className="font-semibold text-base md:text-lg text-gray-900 mb-2 group-hover:text-blue-600">
+              {resource.name}
+            </h4>
+            <M3Chip variant="outlined" size="sm">{resource.type}</M3Chip>
+          </div>
+
+          {/* Open button */}
+          <ExternalLink className="w-5 h-5 text-gray-400 group-hover:text-blue-500 flex-shrink-0" />
+        </div>
+      </M3Card>
+    </a>
+  );
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // TypeScript Interfaces (same as original)
 interface Resource {
@@ -597,38 +745,25 @@ const RoadmapVisualization: React.FC<{ roadmapData: any }> = ({ roadmapData }) =
                           )}
 
                           {/* Resources Preview */}
-                          {node.resources && node.resources.length > 0 && (
-                            <div className="space-y-3">
-                              <h4 className="font-semibold text-slate-900 flex items-center text-lg" style={{ fontFamily: 'Inter, sans-serif' }}>
-                                <BookOpen className="w-5 h-5 mr-2 text-emerald-500" />
-                                Resources ({node.resources.length})
-                              </h4>
-                              <div className="space-y-2">
-                                {node.resources.slice(0, 3).map((resource: Resource, resIndex: number) => (
-                                  <div key={resIndex} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl">
-                                    <div className="flex items-center space-x-3">
-                                      <div className="w-2 h-2 bg-emerald-500 rounded-full" />
-                                      <span className="text-slate-700 font-medium text-sm">{resource.name}</span>
-                                      <M3Chip variant="outlined" size="sm">{resource.type}</M3Chip>
-                                    </div>
-                                    {resource.url && (
-                                      <M3Button
-                                        variant="ghost"
-                                        size="xs"
-                                        onClick={() => window.open(resource.url, '_blank')}
-                                        icon={<ExternalLink className="w-3 h-3" />}
-                                      />
-                                    )}
-                                  </div>
-                                ))}
-                                {node.resources.length > 3 && (
-                                  <div className="text-sm text-slate-500 text-center py-2">
-                                    +{node.resources.length - 3} more resources
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
+                          {/* Resources Preview */}
+{node.resources && node.resources.length > 0 && (
+  <div className="space-y-3">
+    <h4 className="font-semibold text-slate-900 flex items-center text-lg">
+      <BookOpen className="w-5 h-5 mr-2 text-emerald-500" />
+      Resources ({node.resources.length})
+    </h4>
+    <div className="space-y-2">
+      {node.resources.slice(0, 3).map((resource: Resource, resIndex: number) => (
+        <ResourceLink key={resIndex} resource={resource} compact={true} />
+      ))}
+      {node.resources.length > 3 && (
+        <div className="text-sm text-slate-500 text-center py-2">
+          +{node.resources.length - 3} more resources
+        </div>
+      )}
+    </div>
+  </div>
+)}
                         </div>
 
                         {/* Enhanced Action Buttons */}
@@ -839,50 +974,24 @@ const RoadmapVisualization: React.FC<{ roadmapData: any }> = ({ roadmapData }) =
 
                     {/* Resources Section */}
                     {selectedNode.resources && selectedNode.resources.length > 0 && (
-                      <M3Card variant="filled" className="p-6">
-                        <div className="flex items-center justify-between mb-6">
-                          <h3 className="font-bold text-2xl flex items-center" style={{ fontFamily: 'Inter, sans-serif' }}>
-                            <BookOpen className="w-6 h-6 mr-3 text-emerald-500" />
-                            Learning Resources
-                          </h3>
-                          <M3Chip variant="elevated" size="lg">
-                            {selectedNode.resources.length} resources
-                          </M3Chip>
-                        </div>
-                        
-                        <div className="grid gap-4">
-                          {selectedNode.resources.map((resource: Resource, index: number) => (
-                            <M3Card key={index} variant="outlined" className="p-6 hover:shadow-xl transition-all duration-300">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-4">
-                                  <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-2xl flex items-center justify-center">
-                                    {resource.type === 'video' ? <Video className="w-6 h-6 text-white" /> :
-                                     resource.type === 'book' ? <BookMarked className="w-6 h-6 text-white" /> :
-                                     resource.type === 'course' ? <GraduationCap className="w-6 h-6 text-white" /> :
-                                     <Globe className="w-6 h-6 text-white" />}
-                                  </div>
-                                  <div>
-                                    <h4 className="font-semibold text-lg text-slate-900">{resource.name}</h4>
-                                    <M3Chip variant="outlined" size="sm">{resource.type}</M3Chip>
-                                  </div>
-                                </div>
-                                
-                                {resource.url && (
-                                  <M3Button
-                                    variant="gradient"
-                                    size="default"
-                                    onClick={() => window.open(resource.url, '_blank')}
-                                    icon={<ExternalLink className="w-4 h-4" />}
-                                  >
-                                    Access Resource
-                                  </M3Button>
-                                )}
-                              </div>
-                            </M3Card>
-                          ))}
-                        </div>
-                      </M3Card>
-                    )}
+  <M3Card variant="filled" className="p-6">
+    <div className="flex items-center justify-between mb-6">
+      <h3 className="font-bold text-2xl flex items-center">
+        <BookOpen className="w-6 h-6 mr-3 text-emerald-500" />
+        Learning Resources
+      </h3>
+      <M3Chip variant="elevated" size="lg">
+        {selectedNode.resources.length} resources
+      </M3Chip>
+    </div>
+    
+    <div className="grid gap-4">
+      {selectedNode.resources.map((resource: Resource, index: number) => (
+        <ResourceLink key={index} resource={resource} compact={false} />
+      ))}
+    </div>
+  </M3Card>
+)}
 
                     {/* Project Ideas Section */}
                     {selectedNode.project_ideas && selectedNode.project_ideas.length > 0 && (
@@ -1026,11 +1135,11 @@ const RoadmapVisualization: React.FC<{ roadmapData: any }> = ({ roadmapData }) =
 };
 
 // Main Modal Component with Enhanced Design
-const CareerRoadmapModal: React.FC<CareerRoadmapModalProps> = ({ 
-  isOpen, 
-  onClose, 
-  roadmapData, 
-  careerTitle 
+const CareerRoadmapModal: React.FC<CareerRoadmapModalProps> = ({
+  isOpen,
+  onClose,
+  roadmapData,
+  careerTitle
 }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
 
@@ -1078,69 +1187,75 @@ const CareerRoadmapModal: React.FC<CareerRoadmapModalProps> = ({
       {/* Full Screen Modal */}
       <div className={`fixed inset-0 bg-white z-50 overflow-auto ${isFullscreen ? '' : 'p-4 md:p-8'}`}>
         
-        {/* Enhanced Header */}
-        <div className="sticky top-0 bg-white/95 backdrop-blur-2xl border-b border-slate-200/50 z-40 shadow-lg">
-          <div className="max-w-7xl mx-auto px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-600 via-purple-600 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Route className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl md:text-3xl font-bold text-slate-900" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    {careerTitle} Roadmap
-                  </h1>
-                  <p className="text-slate-600 text-sm">Interactive Learning Journey</p>
-                </div>
+              {/* Enhanced Header */}
+      <div className="sticky top-0 bg-white/95 backdrop-blur-2xl border-b border-slate-200/50 z-40 shadow-lg">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="w-14 h-14 bg-gradient-to-br from-blue-600 via-purple-600 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <Route className="w-8 h-8 text-white" />
               </div>
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-slate-900" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  {careerTitle}
+                </h1>
+                <p className="text-slate-600 text-sm">Interactive Learning Journey</p>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-3">
+              <M3Button
+                variant="outlined"
+                size="sm"
+                onClick={shareRoadmap}
+                icon={<Share2 className="w-4 h-4" />}
+              >
+                <span className="hidden md:inline">Share</span>
+              </M3Button>
               
-              <div className="flex items-center space-x-3">
-                <M3Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={shareRoadmap}
-                  icon={<Share2 className="w-4 h-4" />}
-                >
-                  <span className="hidden md:inline">Share</span>
-                </M3Button>
-
-                <M3Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={downloadRoadmap}
-                  icon={<Download className="w-4 h-4" />}
-                >
-                  <span className="hidden md:inline">Export</span>
-                </M3Button>
-
-                <M3Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsFullscreen(!isFullscreen)}
-                  icon={isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
-                >
-                  <span className="sr-only">Toggle Fullscreen</span>
-                </M3Button>
-                
-                <M3Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={onClose}
-                  icon={<X className="w-5 h-5" />}
-                  className="p-3"
-                >
-                  <span className="sr-only">Close</span>
-                </M3Button>
-              </div>
+              <M3Button
+                variant="outlined"
+                size="sm"
+                onClick={downloadRoadmap}
+                icon={<Download className="w-4 h-4" />}
+              >
+                <span className="hidden md:inline">Export</span>
+              </M3Button>
+              
+              <M3Button
+                variant="outlined"
+                size="sm"
+                onClick={() => setIsFullscreen(!isFullscreen)}
+                icon={isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+              >
+                <span className="sr-only">Toggle Fullscreen</span>
+              </M3Button>
+              
+              <M3Button
+                variant="outlined"
+                size="sm"
+                onClick={onClose}
+                icon={<X className="w-5 h-5" />}
+                className="p-3"
+              >
+                <span className="sr-only">Close</span>
+              </M3Button>
             </div>
           </div>
         </div>
-
-        {/* Main Content */}
-        <RoadmapVisualization roadmapData={roadmapData} />
       </div>
+
+      {/* Main Content */}
+      <AdvancedRoadmapVisualization 
+        isOpen={isOpen}
+        onClose={onClose}
+        roadmapData={roadmapData}
+        careerTitle={careerTitle}
+      />
+    </div>
     </>
   );
 };
 
 export default CareerRoadmapModal;
+

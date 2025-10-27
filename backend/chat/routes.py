@@ -50,7 +50,7 @@ def get_current_user_from_header(authorization: str = None):
     return None
 
 # WebSocket endpoint
-@router.websocket("/ws/{user_email}")
+@router.websocket("/wss/{user_email}")
 async def websocket_endpoint(websocket: WebSocket, user_email: str):
     """WebSocket endpoint for real-time chat"""
     username = user_email.split('@')[0] if '@' in user_email else user_email
