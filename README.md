@@ -43,7 +43,7 @@
 
 ```bash
 # Clone the repo
-git clone https://github.com/riteshsolke2004/gen-ai-career-recommender.git
+git clone (https://github.com/riteshsolke2004/Student-Advisor-Portal.git)
 cd gen-ai-career-recommender
 
 # Install frontend
