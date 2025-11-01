@@ -1,43 +1,49 @@
-# Gen-AI Career Recommender
+# 🌟 Gen-AI Career Recommender  
 
-A next-generation AI-powered Career Recommendation & Mentorship Platform built during the Google Gen-AI Hackathon 2025.  
-The platform helps students and job seekers discover the right career paths, bridge skill gaps, and connect with mentors and communities — powered by Google Vertex AI and Gemini models.
-
----
-
-## Features
-- Student Profiling Engine – Builds a detailed profile from academic data, personality insights, and aspirations.  
-- Career Path Recommendation Engine – Personalized career suggestions using Gemini + Vertex AI.  
-- Skill Gap Analyzer & Roadmap Generator – Generates gamified learning roadmaps with badges.  
-- AI Mentor + Human Mentors – AI mentor for instant help + human mentors for long-term guidance.  
-- Community Portal – Join domain-specific student communities.  
-- Interactive Dashboard – Track progress and readiness with Looker Studio.  
-- Vector Search & Knowledge Base – Fast, semantic search with Vertex AI Vector Store.  
+> **A next-generation AI-powered Career Recommendation & Mentorship Platform**  
+> Built during the **Google Gen-AI Hackathon 2025**, this platform helps students and job seekers discover ideal career paths, bridge skill gaps, and connect with mentors and communities — powered by **Google Vertex AI** and **Gemini models**.
 
 ---
 
-## Tech Stack
-- Frontend: React, Looker  
-- Backend: Google Cloud Run, Firestore  
-- AI/ML: Vertex AI, Gemini API, LangGraph  
-- Database: Firestore, Vertex Vector Store  
-- APIs: Google Search API, YouTube Data API v3  
-- DevOps: Docker, GCP (Cloud Run, Firestore, Vertex AI)  
+## 🚀 Features
+
+✅ **Student Profiling Engine** – Builds a detailed profile from academic data, personality insights, and aspirations.  
+✅ **Career Path Recommendation Engine** – Personalized career suggestions using Gemini + Vertex AI.  
+✅ **Skill Gap Analyzer & Roadmap Generator** – Generates gamified learning roadmaps with badges.  
+✅ **AI Mentor + Human Mentors** – AI mentor for instant help + human mentors for long-term guidance.  
+✅ **Community Portal** – Join domain-specific student communities.  
+✅ **Interactive Dashboard** – Track progress and readiness with Looker Studio.  
+✅ **Vector Search & Knowledge Base** – Fast, semantic search with Vertex AI Vector Store.
 
 ---
 
-## Use Cases
-- Students → Get a personalized career roadmap.  
-- Job seekers → Analyze resumes, get skill-gap insights, and ATS improvement tips.  
-- Mentorship → Access AI and Human mentors.  
-- Communities → Join peer-learning networks.  
+## 🧠 Tech Stack
+
+| Layer | Technologies |
+|--------|--------------|
+| **Frontend** | React, Looker |
+| **Backend** | Google Cloud Run, Firestore |
+| **AI/ML** | Vertex AI, Gemini API, LangGraph |
+| **Database** | Firestore, Vertex Vector Store |
+| **APIs** | Google Search API, YouTube Data API v3 |
+| **DevOps** | Docker, GCP (Cloud Run, Firestore, Vertex AI) |
 
 ---
 
-## Setup & Installation
+## 💡 Use Cases
+
+👩‍🎓 **Students** → Get a personalized career roadmap.  
+💼 **Job Seekers** → Analyze resumes, get skill-gap insights, and ATS improvement tips.  
+🧑‍🏫 **Mentorship** → Access AI and Human mentors.  
+🌐 **Communities** → Join peer-learning networks.  
+
+---
+
+## 🛠️ Setup & Installation
+
 ```bash
 # Clone the repo
-git clone https://github.com/<your-username>/gen-ai-career-recommender.git
+git clone https://github.com/riteshsolke2004/gen-ai-career-recommender.git
 cd gen-ai-career-recommender
 
 # Install frontend
