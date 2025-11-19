@@ -1,10 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Response
 from fastapi.middleware.cors import CORSMiddleware
 import logging
 import httpx
 import asyncio
-from fastapi import HTTPException, UploadFile, File, Form, Response
-
+from typing import List, Optional
+import uuid
+from datetime import timedelta
 
 # Import configuration
 from config.settings import get_settings
@@ -13,6 +14,10 @@ from config.cors import get_cors_origins
 # Import core components
 from core.logging import setup_logging
 from core.lifespan import lifespan
+
+# Import Firebase
+import firebase_admin
+from firebase_admin import credentials, storage, firestore
 
 # Import routers
 from auth.routes import router as auth_router
@@ -27,15 +32,6 @@ from database.routes.career_recommendations_routes import router as career_recom
 
 # Import new resume routes
 from database.routes.resume_routes import router as resume_router
-
-# Import document routes (with fallback for development)
-try:
-    from database.routes.documents_routes import router as document_router
-    DOCUMENT_ROUTES_ENABLED = True
-    logging.info("✅ Document routes loaded")
-except ImportError as e:
-    logging.warning(f"⚠️ Document routes not loaded: {e}")
-    DOCUMENT_ROUTES_ENABLED = False
 
 # Import chat routes (with fallback)
 try:
@@ -52,20 +48,46 @@ settings = get_settings()
 setup_logging()
 logger = logging.getLogger(__name__)
 
+# Initialize Firebase Storage
+firebase_bucket = None
+FIREBASE_STORAGE_ENABLED = False
+
+try:
+    # Check if Firebase is already initialized
+    if not firebase_admin._apps:
+        cred = credentials.Certificate('serviceAccountKey.json')
+        firebase_admin.initialize_app(cred, {
+            'storageBucket': 'ai-advisor-86f45.firebasestorage.app'
+        })
+    
+    firebase_bucket = storage.bucket()
+    FIREBASE_STORAGE_ENABLED = True
+    logger.info("✅ Firebase Storage initialized successfully")
+    logger.info(f"✅ Storage bucket: {firebase_bucket.name}")
+except Exception as e:
+    logger.error(f"❌ Firebase Storage initialization failed: {e}")
+    FIREBASE_STORAGE_ENABLED = False
+
 # Create FastAPI app
 app = FastAPI(
     title="Student Advisor Portal",
-    description="Community chat platform with Firestore backend and resume analysis",
+    description="Community chat platform with Firestore backend and Firebase Storage",
     version="1.0.0",
     lifespan=lifespan
 )
 
-CHATBOT_SERVICE_URL = "https://chatbot-app-278398219986.us-central1.run.app"
+CHATBOT_SERVICE_URL = "https://chatbot-service-i0vy.onrender.com"
 
 # CORS Configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=get_cors_origins(),
+    allow_origins=[
+        "http://localhost:8080",
+        "http://localhost:5173",
+        "http://127.0.0.1:8000",
+        "https://your-frontend-domain.com",
+        "*"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -81,132 +103,243 @@ app.include_router(career_router, tags=["career"])
 app.include_router(profile_router, tags=["profile"])
 app.include_router(career_form_router, tags=["career-form"])
 app.include_router(career_recommendations_router, tags=["career-recommendations"])
-
-# Include resume analysis router
 app.include_router(resume_router, tags=["resume-analysis"])
-logger.info("✅ Resume analysis routes loaded")
 
-# Include document router if available
-if DOCUMENT_ROUTES_ENABLED:
-    app.include_router(document_router, tags=["documents"])
-    logger.info("✅ Document routes included")
-else:
-    logger.warning("⚠️ Document routes not available")
+logger.info("✅ Resume analysis routes loaded")
 
 # Include chat router if available
 if CHAT_ENABLED:
     app.include_router(chat_router, tags=["chat"])
     logger.info("✅ Chat routes loaded")
 
-# Debug endpoint to list all routes
-@app.get("/debug/routes")
-def list_routes():
-    """Debug endpoint to list all available routes"""
-    routes = []
-    for route in app.routes:
-        if hasattr(route, 'methods') and hasattr(route, 'path'):
-            routes.append({
-                "path": route.path,
-                "methods": list(route.methods),
-                "name": getattr(route, 'name', 'Unknown')
-            })
-    return {"routes": routes}
+# ==================== FIREBASE STORAGE DOCUMENT UPLOAD ====================
 
-@app.get("/debug/chatbot-service")
-async def debug_chatbot_service():
-    """Debug endpoint to check chatbot service availability"""
-    
-    results = {}
-    
-    # Test different possible endpoints
-    endpoints_to_test = [
-        "/",
-        "/chat", 
-        "/chat/enhanced",
-        "/voice",
-        "/health",
-        "/docs"
-    ]
-    
-    for endpoint in endpoints_to_test:
+@app.post("/api/documents/upload/{user_email}")
+async def upload_documents_firebase(
+    user_email: str,
+    resume: UploadFile = File(...),
+    certificates: List[UploadFile] = File(default=[]),
+    domain: str = Form(...),
+    portfolioUrl: str = Form(default=""),
+    linkedinUrl: str = Form(default=""),
+    githubUrl: str = Form(default=""),
+    personalPortfolioUrl: str = Form(default="")
+):
+    """
+    Upload user documents to Firebase Storage
+    """
+    try:
+        if not FIREBASE_STORAGE_ENABLED or firebase_bucket is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Firebase Storage not available. Please check configuration."
+            )
+        
+        logger.info(f"📤 Starting document upload for user: {user_email}")
+        
+        # Sanitize email for folder name
+        user_folder = user_email.replace("@", "_at_").replace(".", "_")
+        
+        # Upload Resume
+        resume_url = None
+        resume_filename = None
+        if resume and resume.filename:
+            logger.info(f"📄 Uploading resume: {resume.filename}")
+            
+            # Create unique filename
+            file_extension = resume.filename.split('.')[-1]
+            resume_filename = f"resumes/{user_folder}/{uuid.uuid4()}.{file_extension}"
+            
+            # Read file content
+            resume_content = await resume.read()
+            
+            # Create blob and upload
+            resume_blob = firebase_bucket.blob(resume_filename)
+            resume_blob.upload_from_string(
+                resume_content,
+                content_type=resume.content_type or 'application/pdf'
+            )
+            
+            # Generate signed URL (valid for 1 year)
+            resume_url = resume_blob.generate_signed_url(
+                expiration=timedelta(days=365),
+                version="v4"
+            )
+            
+            logger.info(f"✅ Resume uploaded successfully: {resume_filename}")
+        
+        # Upload Certificates
+        certificate_urls = []
+        if certificates:
+            logger.info(f"📜 Uploading {len(certificates)} certificate(s)")
+            
+            for idx, cert in enumerate(certificates):
+                if cert.filename:
+                    # Create unique filename
+                    file_extension = cert.filename.split('.')[-1]
+                    cert_filename = f"certificates/{user_folder}/{uuid.uuid4()}.{file_extension}"
+                    
+                    # Read certificate content
+                    cert_content = await cert.read()
+                    
+                    # Create blob and upload
+                    cert_blob = firebase_bucket.blob(cert_filename)
+                    cert_blob.upload_from_string(
+                        cert_content,
+                        content_type=cert.content_type or 'application/pdf'
+                    )
+                    
+                    # Generate signed URL
+                    cert_url = cert_blob.generate_signed_url(
+                        expiration=timedelta(days=365),
+                        version="v4"
+                    )
+                    
+                    certificate_urls.append({
+                        "filename": cert.filename,
+                        "url": cert_url,
+                        "storage_path": cert_filename
+                    })
+                    
+                    logger.info(f"✅ Certificate {idx + 1} uploaded: {cert.filename}")
+        
+        # Save metadata to Firestore
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
-                url = f"{CHATBOT_SERVICE_URL}{endpoint}"
-                response = await client.get(url)
-                results[endpoint] = {
-                    "status_code": response.status_code,
-                    "available": response.status_code < 400,
-                    "url": url,
-                    "response_preview": response.text[:200] if response.text else None
+            db = firestore.client()
+            
+            doc_data = {
+                "userEmail": user_email,
+                "domain": domain,
+                "portfolioUrl": portfolioUrl,
+                "linkedinUrl": linkedinUrl,
+                "githubUrl": githubUrl,
+                "personalPortfolioUrl": personalPortfolioUrl,
+                "resumeUrl": resume_url,
+                "resumeFilename": resume.filename if resume else None,
+                "resumeStoragePath": resume_filename,
+                "certificates": certificate_urls,
+                "uploadedAt": firestore.SERVER_TIMESTAMP,
+                "totalCertificates": len(certificate_urls)
+            }
+            
+            # Save to Firestore
+            db.collection('user_documents').document(user_email).set(doc_data)
+            logger.info(f"✅ Metadata saved to Firestore for {user_email}")
+            
+        except Exception as firestore_error:
+            logger.warning(f"⚠️ Failed to save metadata to Firestore: {firestore_error}")
+        
+        return {
+            "success": True,
+            "message": "Documents uploaded successfully to Firebase Storage",
+            "user_email": user_email,
+            "resume": {
+                "filename": resume.filename if resume else None,
+                "url": resume_url,
+                "storage_path": resume_filename
+            },
+            "certificates": certificate_urls,
+            "certificate_count": len(certificate_urls),
+            "metadata": {
+                "domain": domain,
+                "portfolioUrl": portfolioUrl,
+                "socialLinks": {
+                    "linkedin": linkedinUrl,
+                    "github": githubUrl,
+                    "portfolio": personalPortfolioUrl
                 }
-        except Exception as e:
-            results[endpoint] = {
-                "status_code": None,
-                "available": False,
-                "url": f"{CHATBOT_SERVICE_URL}{endpoint}",
-                "error": str(e)
-            }
-    
-    return {
-        "chatbot_service_url": CHATBOT_SERVICE_URL,
-        "endpoint_tests": results
-    }
-
-@app.get("/test/deployed-chatbot")
-async def test_deployed_chatbot():
-    """Test different request formats with your deployed chatbot service"""
-    
-    results = {}
-    base_url = CHATBOT_SERVICE_URL
-    
-    # Test different request formats
-    test_formats = [
-        {
-            "name": "format_1_simple_text",
-            "data": {"message": "hello"}
-        },
-        {
-            "name": "format_2_with_options",
-            "data": {
-                "message": "hello",
-                "option_id": None,
-                "input_type": "text"
-            }
-        },
-        {
-            "name": "format_3_menu_option",
-            "data": {
-                "option_id": "main_menu",
-                "input_type": "option"
             }
         }
-    ]
     
-    for test_format in test_formats:
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Upload error: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Resume upload failed: {str(e)}"
+        )
+
+
+@app.get("/api/documents/{user_email}")
+async def get_user_documents(user_email: str):
+    """Get user's uploaded documents from Firestore"""
+    try:
+        db = firestore.client()
+        
+        # Get document metadata from Firestore
+        doc_ref = db.collection('user_documents').document(user_email)
+        doc = doc_ref.get()
+        
+        if not doc.exists:
+            raise HTTPException(
+                status_code=404,
+                detail="User documents not found"
+            )
+        
+        return {
+            "success": True,
+            "user_email": user_email,
+            "documents": doc.to_dict()
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Error fetching documents: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.delete("/api/documents/{user_email}/resume")
+async def delete_resume(user_email: str):
+    """Delete user's resume from Firebase Storage"""
+    try:
+        if not FIREBASE_STORAGE_ENABLED or firebase_bucket is None:
+            raise HTTPException(
+                status_code=503,
+                detail="Firebase Storage not available"
+            )
+        
+        user_folder = user_email.replace("@", "_at_").replace(".", "_")
+        
+        # List all blobs in user's resume folder
+        blobs = list(firebase_bucket.list_blobs(prefix=f"resumes/{user_folder}/"))
+        
+        if not blobs:
+            raise HTTPException(
+                status_code=404,
+                detail="No resume found for this user"
+            )
+        
+        # Delete all resume files
+        for blob in blobs:
+            blob.delete()
+            logger.info(f"🗑️ Deleted: {blob.name}")
+        
+        # Update Firestore
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
-                response = await client.post(
-                    f"{base_url}/chat",
-                    json=test_format["data"],
-                    headers={"Content-Type": "application/json"}
-                )
-                
-                results[test_format["name"]] = {
-                    "status_code": response.status_code,
-                    "success": response.status_code == 200,
-                    "response_preview": response.text[:300] if response.text else None
-                }
-                
+            db = firestore.client()
+            db.collection('user_documents').document(user_email).update({
+                "resumeUrl": None,
+                "resumeFilename": None,
+                "resumeStoragePath": None
+            })
         except Exception as e:
-            results[test_format["name"]] = {
-                "error": str(e),
-                "success": False
-            }
+            logger.warning(f"⚠️ Failed to update Firestore: {e}")
+        
+        return {
+            "success": True,
+            "message": "Resume deleted successfully",
+            "deleted_files": len(blobs)
+        }
     
-    return {
-        "service_url": base_url,
-        "test_results": results
-    }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ Delete error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ==================== CHATBOT PROXY ENDPOINTS ====================
 
 # Complete fallback response system
 def get_fallback_response(request_data):
@@ -274,141 +407,7 @@ def get_fallback_response(request_data):
             }
         }
     
-    # Handle career help
-    elif option_id == "career_help":
-        return {
-            "success": True,
-            "response": {
-                "type": "advice",
-                "message": "💼 **Career Guidance Available**\n\n• **Career Planning** - Set goals and create personalized roadmaps\n• **Skill Development** - Identify skill gaps and get learning recommendations\n• **Job Search Strategy** - Market insights and opportunity discovery\n• **Resume Optimization** - ATS-friendly resume building and improvement\n• **Interview Preparation** - Practice sessions and expert feedback\n• **Networking** - Connect with mentors and industry professionals\n\nWhat specific area would you like help with today?",
-                "confidence": 95,
-                "follow_up_options": [
-                    {"id": "go_career_paths", "text": "🚀 Explore Careers"},
-                    {"id": "go_skills", "text": "🎯 Analyze Skills"},
-                    {"id": "go_resume", "text": "📄 Build Resume"},
-                    {"id": "go_jobs", "text": "💼 Find Jobs"},
-                    {"id": "main_menu", "text": "🏠 Main Menu"}
-                ]
-            }
-        }
-    
-    # Handle navigation options (go_* pattern)
-    elif option_id and option_id.startswith("go_"):
-        page_mapping = {
-            "go_dashboard": ("/dashboard", "Dashboard", "Personal career development hub with progress tracking"),
-            "go_career_paths": ("/career-paths", "Career Paths", "Explore career options and industry insights"),
-            "go_skills": ("/skills-analysis", "Skills Analysis", "Comprehensive skill assessment and development"),
-            "go_resume": ("/resume-builder", "Resume Builder", "AI-powered resume creation and ATS optimization"),
-            "go_jobs": ("/job-market", "Job Market", "Real-time job market trends and opportunities"),
-            "go_mentorship": ("/mentorship", "Mentorship", "Connect with industry professionals and experts"),
-            "go_community": ("/community", "Community", "Peer collaboration and knowledge sharing"),
-            "go_profile": ("/profile", "Profile", "Account management and personal preferences")
-        }
-        
-        if option_id in page_mapping:
-            page, name, description = page_mapping[option_id]
-            return {
-                "success": True,
-                "response": {
-                    "type": "navigation",
-                    "message": f"🧭 Taking you to **{name}**...\n\n{description}\n\nYou'll find tools and resources to help advance your career goals.",
-                    "page": page,
-                    "confidence": 95,
-                    "follow_up_options": [
-                        {"id": "main_menu", "text": "🏠 Main Menu"},
-                        {"id": "navigate_pages", "text": "🧭 Go Somewhere Else"},
-                        {"id": "career_help", "text": "💼 Get Career Help"}
-                    ]
-                }
-            }
-    
-    # Handle text input with intelligent responses
-    elif message:
-        # Skill-related queries
-        if any(word in message for word in ["skill", "skills", "ability", "abilities", "competenc", "talent"]):
-            return {
-                "success": True,
-                "response": {
-                    "type": "text",
-                    "message": "🎯 **Skills Development Help**\n\nI can help you:\n• Assess your current skill level\n• Identify skill gaps for your target role\n• Find learning resources and courses\n• Track your skill development progress\n• Get personalized recommendations\n\nOur Skills Analysis tool provides comprehensive assessments and personalized development plans.",
-                    "confidence": 88,
-                    "actions": [{"type": "navigate", "page": "/skills-analysis", "label": "Go to Skills Analysis"}],
-                    "follow_up_options": [
-                        {"id": "go_skills", "text": "🎯 Start Skills Assessment"},
-                        {"id": "career_help", "text": "💼 More Career Help"},
-                        {"id": "main_menu", "text": "🏠 Main Menu"}
-                    ]
-                }
-            }
-        
-        # Resume-related queries
-        elif any(word in message for word in ["resume", "cv", "curriculum vitae", "ats", "optimize"]):
-            return {
-                "success": True,
-                "response": {
-                    "type": "text",
-                    "message": "📄 **Resume Building & Optimization**\n\nI can help you:\n• Create ATS-optimized resumes\n• Choose the right template for your industry\n• Write compelling content and descriptions\n• Optimize keywords for better visibility\n• Check ATS compatibility scores\n\nOur Resume Builder uses AI to ensure your resume gets noticed by both ATS systems and hiring managers.",
-                    "confidence": 90,
-                    "actions": [{"type": "navigate", "page": "/resume-builder", "label": "Go to Resume Builder"}],
-                    "follow_up_options": [
-                        {"id": "go_resume", "text": "📄 Build Resume"},
-                        {"id": "main_menu", "text": "🏠 Main Menu"}
-                    ]
-                }
-            }
-        
-        # Job/Career-related queries
-        elif any(word in message for word in ["job", "jobs", "career", "work", "employment", "opportunity", "position"]):
-            return {
-                "success": True,
-                "response": {
-                    "type": "text",
-                    "message": "💼 **Career & Job Search Support**\n\nI can help you:\n• Explore different career paths and opportunities\n• Understand industry trends and salary ranges\n• Find job openings that match your skills\n• Develop job search strategies\n• Prepare for interviews and networking\n\nVisit our Career Paths section for industry insights or Job Market for current opportunities.",
-                    "confidence": 87,
-                    "actions": [{"type": "navigate", "page": "/career-paths", "label": "Explore Career Paths"}],
-                    "follow_up_options": [
-                        {"id": "go_career_paths", "text": "🚀 Career Paths"},
-                        {"id": "go_jobs", "text": "💼 Job Market"},
-                        {"id": "main_menu", "text": "🏠 Main Menu"}
-                    ]
-                }
-            }
-        
-        # General greetings and help
-        elif any(word in message for word in ["hello", "hi", "hey", "help", "start", "begin"]):
-            return {
-                "success": True,
-                "response": {
-                    "type": "text",
-                    "message": "👋 **Hello! Welcome to Student Advisor Portal**\n\nI'm your AI career assistant, ready to help you advance your professional journey. I can assist with:\n\n• Career planning and exploration\n• Skills assessment and development\n• Resume building and optimization\n• Job search strategies\n• Interview preparation\n• Professional networking\n\nWhat aspect of your career would you like to focus on today?",
-                    "confidence": 92,
-                    "follow_up_options": [
-                        {"id": "explore_features", "text": "🔍 Explore Features"},
-                        {"id": "career_help", "text": "💼 Career Guidance"},
-                        {"id": "quick_actions", "text": "⚡ Quick Actions"},
-                        {"id": "main_menu", "text": "🏠 Main Menu"}
-                    ]
-                }
-            }
-        
-        # Default intelligent response for other text
-        else:
-            return {
-                "success": True,
-                "response": {
-                    "type": "text",
-                    "message": f"💭 I understand you're asking about career development.\n\nI'm here to help with your professional growth! I can assist you with:\n• Career planning and goal setting\n• Skills development and assessment\n• Resume writing and optimization\n• Job search and interview preparation\n• Professional networking and mentorship\n\nCan you tell me more about what specific career help you're looking for?",
-                    "confidence": 75,
-                    "follow_up_options": [
-                        {"id": "career_help", "text": "💼 Career Guidance"},
-                        {"id": "explore_features", "text": "🔍 Platform Features"},
-                        {"id": "free_text", "text": "💬 Ask Differently"},
-                        {"id": "main_menu", "text": "🏠 Main Menu"}
-                    ]
-                }
-            }
-    
-    # Final fallback
+    # Default fallback
     return {
         "success": True,
         "response": {
@@ -425,7 +424,7 @@ def get_fallback_response(request_data):
     }
 
 
-@app.post("/api/chat/enhanced")
+@app.post("/chat/enhanced")
 async def proxy_enhanced_chat(request: dict):
     """Enhanced chatbot proxy with comprehensive fallback"""
     try:
@@ -440,98 +439,45 @@ async def proxy_enhanced_chat(request: dict):
             "session_id": request.get("session_id")
         }
         
-        logger.info(f"Transformed request: {transformed_request}")
-        
-        # Try deployed service first, but always fall back on any error
+        # Try deployed service, fallback on error
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
                 response = await client.post(
-                    f"{CHATBOT_SERVICE_URL}/chat",  # Use /chat endpoint (not /chat/enhanced)
+                    f"{CHATBOT_SERVICE_URL}/chat",
                     json=transformed_request,
                     headers={"Content-Type": "application/json"}
                 )
                 
-                logger.info(f"Chatbot service response status: {response.status_code}")
-                
                 if response.status_code == 200:
                     result = response.json()
-                    # Check if the response is in expected format
                     if result.get("success") and result.get("response"):
-                        logger.info("Using deployed service response")
                         return result
                     else:
-                        logger.warning("Deployed service returned unexpected format, using fallback")
                         raise ValueError("Unexpected response format")
                 else:
-                    logger.warning(f"Deployed service error: {response.status_code}, using fallback")
                     raise httpx.RequestError("Service returned error")
                     
         except Exception as service_error:
-            logger.info(f"Using fallback due to service issue: {service_error}")
-            # Always use fallback - it's comprehensive and works well
-            fallback_response = get_fallback_response(transformed_request)
-            return fallback_response
+            logger.info(f"Using fallback: {service_error}")
+            return get_fallback_response(transformed_request)
         
     except Exception as e:
-        logger.error(f"Unexpected error in chat endpoint: {str(e)}")
-        # Even if there's an unexpected error, provide a working response
-        return {
-            "success": True,
-            "response": {
-                "type": "options",
-                "message": "👋 Welcome! I'm your AI career assistant. How can I help you today?",
-                "options": [
-                    {"id": "career_help", "text": "💼 Career Guidance"},
-                    {"id": "explore_features", "text": "🔍 Platform Features"},
-                    {"id": "navigate_pages", "text": "🧭 Quick Navigation"}
-                ],
-                "confidence": 85
-            }
-        }
+        logger.error(f"Chat error: {e}")
+        return get_fallback_response({})
+
 
 @app.post("/api/chat/voice")
 async def proxy_voice_chat(file: UploadFile = File(...), current_page: str = Form(None)):
-    """Enhanced voice processing with fallback to text suggestions"""
+    """Voice processing with fallback"""
     try:
-        logger.info(f"Received voice chat request for file: {file.filename}")
-        
-        if not file.filename:
-            return {
-                "success": False,
-                "error": "No file provided",
-                "message": "Please select an audio file to upload.",
-                "response": {
-                    "type": "error",
-                    "message": "No audio file was provided. Please try recording again.",
-                    "confidence": 0,
-                    "follow_up_options": [{"id": "main_menu", "text": "🏠 Main Menu"}]
-                }
-            }
+        logger.info(f"Voice request: {file.filename}")
         
         file_content = await file.read()
-        if len(file_content) == 0:
-            return {
-                "success": False,
-                "error": "Empty file",
-                "message": "The uploaded file is empty. Please try recording again.",
-                "response": {
-                    "type": "error",
-                    "message": "The audio file appears to be empty. Please try recording again.",
-                    "confidence": 0,
-                    "follow_up_options": [{"id": "main_menu", "text": "🏠 Main Menu"}]
-                }
-            }
         
-        logger.info(f"Processing voice file: {file.filename}, size: {len(file_content)} bytes")
-        
-        # Try deployed voice service first
+        # Try deployed service
         try:
-            files = {
-                "file": (file.filename, file_content, file.content_type or "audio/wav")
-            }
-            data = {
-                "current_page": current_page or "/"
-            }
+            files = {"file": (file.filename, file_content, file.content_type or "audio/wav")}
+            data = {"current_page": current_page or "/"}
             
             async with httpx.AsyncClient(timeout=45.0) as client:
                 response = await client.post(
@@ -540,122 +486,67 @@ async def proxy_voice_chat(file: UploadFile = File(...), current_page: str = For
                     data=data
                 )
                 
-                logger.info(f"Voice service response status: {response.status_code}")
-                
                 if response.status_code == 200:
-                    result = response.json()
-                    logger.info("Voice processing successful via deployed service")
-                    return result
+                    return response.json()
                 else:
-                    error_text = response.text
-                    logger.warning(f"Voice service error: {response.status_code} - {error_text}")
-                    raise httpx.RequestError(f"Voice service returned {response.status_code}")
+                    raise httpx.RequestError("Voice service error")
                     
-        except Exception as voice_error:
-            logger.warning(f"Voice service failed: {voice_error}, providing fallback response")
-            
-            # Provide helpful fallback response for voice
+        except Exception:
             return {
                 "success": False,
-                "error": "Voice service temporarily unavailable",
-                "message": "Voice processing is currently offline. Please use text input instead.",
-                "transcript": "Voice processing unavailable",
+                "error": "Voice service unavailable",
+                "message": "Please use text input instead",
                 "response": {
                     "type": "text",
-                    "message": "🎤 **Voice processing is temporarily unavailable.**\n\nI heard you trying to use voice input, but our voice recognition service is currently offline. Don't worry - I'm still here to help!\n\n**Alternative ways to get help:**\n• Type your question in the text box below\n• Use the menu options I provide\n• Ask me about career development topics\n\nWhat would you like to know about your career development?",
+                    "message": "🎤 Voice processing temporarily unavailable. Please type your question.",
                     "confidence": 80,
                     "follow_up_options": [
-                        {"id": "career_help", "text": "💼 Career Guidance"},
-                        {"id": "explore_features", "text": "🔍 Platform Features"},
-                        {"id": "free_text", "text": "💬 Ask Me Anything"},
                         {"id": "main_menu", "text": "🏠 Main Menu"}
                     ]
                 }
             }
                 
     except Exception as e:
-        logger.error(f"Voice chat error: {str(e)}")
-        return {
-            "success": False,
-            "error": f"Voice processing failed: {str(e)}",
-            "message": "Voice processing failed. Please try text input instead.",
-            "response": {
-                "type": "error",
-                "message": "Sorry, I couldn't process your voice message. Please try typing your question instead.",
-                "confidence": 0,
-                "follow_up_options": [
-                    {"id": "main_menu", "text": "🏠 Main Menu"},
-                    {"id": "free_text", "text": "💬 Ask Me Anything"}
-                ]
-            }
-        }
+        logger.error(f"Voice error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/api/chat/status")
 async def get_chatbot_status():
     """Get chatbot service status"""
     try:
-        # Try /health endpoint first (from your debug test)
         async with httpx.AsyncClient(timeout=10.0) as client:
             response = await client.get(f"{CHATBOT_SERVICE_URL}/health")
             if response.status_code == 200:
-                health_data = response.json()
                 return {
                     "status": "operational",
-                    "service_health": health_data,
-                    "proxy_status": "connected",
-                    "service_url": CHATBOT_SERVICE_URL,
-                    "available_endpoints": ["/chat", "/voice", "/health"]
-                }
-            else:
-                return {
-                    "status": "service_error",
-                    "proxy_status": "fallback_active",
-                    "message": f"Health check returned {response.status_code}",
+                    "service_health": response.json(),
                     "service_url": CHATBOT_SERVICE_URL
                 }
     except Exception as e:
-        logger.error(f"Status check failed: {e}")
         return {
             "status": "offline",
-            "proxy_status": "fallback_active", 
             "error": str(e),
-            "service_url": CHATBOT_SERVICE_URL,
-            "message": "Chatbot service is offline, using fallback responses"
+            "message": "Using fallback responses"
         }
 
-@app.get("/api/chat/audio/{filename}")
-async def proxy_audio(filename: str):
-    """Proxy audio file requests"""
-    try:
-        # Check if your deployed service has an audio endpoint
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            # Try different possible audio endpoints
-            possible_endpoints = [
-                f"/audio/{filename}",
-                f"/files/{filename}",
-                f"/static/{filename}"
-            ]
-            
-            for endpoint in possible_endpoints:
-                try:
-                    response = await client.get(f"{CHATBOT_SERVICE_URL}{endpoint}")
-                    if response.status_code == 200:
-                        return Response(
-                            content=response.content,
-                            media_type="audio/mpeg",
-                            headers={"Content-Disposition": f"inline; filename={filename}"}
-                        )
-                except:
-                    continue
-                    
-            # If no audio endpoint works
-            raise HTTPException(status_code=404, detail=f"Audio file not found: {filename}")
-                
-    except Exception as e:
-        logger.error(f"Audio proxy error: {e}")
-        raise HTTPException(status_code=404, detail="Audio not available")
 
-# Root endpoint
+# ==================== DEBUG & ROOT ENDPOINTS ====================
+
+@app.get("/debug/routes")
+def list_routes():
+    """List all available routes"""
+    routes = []
+    for route in app.routes:
+        if hasattr(route, 'methods') and hasattr(route, 'path'):
+            routes.append({
+                "path": route.path,
+                "methods": list(route.methods),
+                "name": getattr(route, 'name', 'Unknown')
+            })
+    return {"routes": routes}
+
+
 @app.get("/")
 def root():
     """API root endpoint"""
@@ -663,9 +554,8 @@ def root():
         "message": "Student Advisor Portal API",
         "version": "1.0.0",
         "database": "Firestore",
-        "storage": "Google Cloud Storage" if DOCUMENT_ROUTES_ENABLED else "Not configured",
+        "storage": "Firebase Storage" if FIREBASE_STORAGE_ENABLED else "Not configured",
         "status": "running",
-        "websocket_url": "/api/chat/wss/{user_id}" if CHAT_ENABLED else None,
         "docs": "/docs",
         "debug_routes": "/debug/routes",
         "features": {
@@ -676,83 +566,21 @@ def root():
             "profile_management": True,
             "career_forms": True,
             "resume_analysis": True,
-            "document_management": DOCUMENT_ROUTES_ENABLED,
-            "file_storage": "GCP Storage" if DOCUMENT_ROUTES_ENABLED else "Not configured",
+            "document_management": FIREBASE_STORAGE_ENABLED,
+            "file_storage": "Firebase Storage" if FIREBASE_STORAGE_ENABLED else "Not configured",
             "enhanced_chatbot": True,
             "voice_chat": True,
-            "option_based_navigation": True,
         },
         "chatbot_endpoints": {
-            "enhanced_chat": "/api/chat/enhanced",
-            "voice_chat": "/api/chat/voice", 
+            "enhanced_chat": "/chat/enhanced",
+            "voice_chat": "/api/chat/voice",
             "chat_status": "/api/chat/status",
-            "audio_files": "/api/chat/audio/{filename}"
         },
         "available_endpoints": {
-            "resume_analysis": "/api/resume/analyze",
-            "resume_health": "/api/resume/health",
-            "resume_test": "/api/resume/test",
-            "documents": "/api/documents/upload/{user_email}" if DOCUMENT_ROUTES_ENABLED else "Not available",
+            "resume_analysis": "/api/analyze_resume",
+            "documents_upload": "/api/documents/upload/{user_email}" if FIREBASE_STORAGE_ENABLED else "Not available",
+            "documents_get": "/api/documents/{user_email}" if FIREBASE_STORAGE_ENABLED else "Not available",
             "health": "/health",
             "docs": "/docs"
         }
     }
-
-# Temporary document upload endpoint for development (remove after proper setup)
-if not DOCUMENT_ROUTES_ENABLED:
-    from fastapi import HTTPException, UploadFile, File, Form
-    from typing import List, Optional
-    
-    @app.post("/api/documents/upload/{user_email}")
-    async def temp_upload_documents(
-        user_email: str,
-        domain: str = Form(...),
-        portfolio_url: Optional[str] = Form(None),
-        linkedin_url: Optional[str] = Form(None),
-        github_url: Optional[str] = Form(None),
-        personal_portfolio_url: Optional[str] = Form(None),
-        resume: Optional[UploadFile] = File(None),
-        certificates: List[UploadFile] = File(default=[])
-    ):
-        """Temporary document upload endpoint for development"""
-        logger.warning("Using temporary document upload endpoint")
-        
-        # Simulate processing
-        uploaded_files = []
-        total_size = 0
-        
-        if resume and resume.filename:
-            content = await resume.read()
-            uploaded_files.append({
-                "type": "resume",
-                "filename": resume.filename,
-                "size": len(content)
-            })
-            total_size += len(content)
-        
-        for cert in certificates:
-            if cert.filename:
-                content = await cert.read()
-                uploaded_files.append({
-                    "type": "certificate", 
-                    "filename": cert.filename,
-                    "size": len(content)
-                })
-                total_size += len(content)
-        
-        return {
-            "success": True,
-            "message": f"Development mode: {len(uploaded_files)} file(s) received but not stored",
-            "user_email": user_email,
-            "uploaded_files": uploaded_files,
-            "total_files": len(uploaded_files),
-            "total_size": total_size,
-            "note": "Files are not actually stored in development mode. Set up GCP Storage for production.",
-            "data_received": {
-                "domain": domain,
-                "portfolio_url": portfolio_url,
-                "linkedin_url": linkedin_url,
-                "github_url": github_url,
-                "personal_portfolio_url": personal_portfolio_url
-            }
-        }

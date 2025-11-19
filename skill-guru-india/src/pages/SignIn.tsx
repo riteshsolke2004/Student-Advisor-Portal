@@ -32,7 +32,7 @@ const SignIn = () => {
     e.preventDefault();
 
     try {                      
-      const res = await fetch("https://fastapi-backend-fixed-278398219986.asia-south1.run.app/auth/signin", {
+      const res = await fetch("http://127.0.0.1:8000/auth/signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -68,7 +68,7 @@ const SignIn = () => {
     try {
       const { user, idToken } = await signInWithGoogle();
 
-      const res = await fetch("https://fastapi-backend-fixed-278398219986.asia-south1.run.app/auth/google", {
+      const res = await fetch("http://127.0.0.1:8000/auth/google", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

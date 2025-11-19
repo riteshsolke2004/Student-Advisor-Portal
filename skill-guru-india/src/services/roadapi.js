@@ -1,5 +1,5 @@
 // Fix the double slash issue and add proper error handling
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://career-roadmap-278398219986.asia-south1.run.app';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://roadmap-service-1.onrender.com';
 
 export const generateRoadmap = async (sessionId, query, reset = false) => {
   try {

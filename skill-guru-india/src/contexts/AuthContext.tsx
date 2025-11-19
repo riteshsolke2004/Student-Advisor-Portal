@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Function to validate token with backend
   const validateToken = async (token: string): Promise<boolean> => {
     try {
-      const response = await fetch('https://chatbot-app-278398219986.us-central1.run.app/auth/profile', {
+      const response = await fetch('http://127.0.0.1:8000/auth/profile', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -217,7 +217,7 @@ const useWebSocket = (userId: string, onMessage: (msg: Message) => void, onNotif
     }
 // may be error due to change in the url ws://local..
     try {
-      const wsUrl = `wss://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/chat/wss/${encodeURIComponent(userId)}`;
+      const wsUrl = `ws://127.0.0.1:8000/api/chat/wss/${encodeURIComponent(userId)}`;
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
@@ -523,7 +523,7 @@ const Community: React.FC = () => {
       formData.append('sender_id', currentUser.user_id);
       
       try {
-        const response = await fetch('https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/chat/upload', {
+        const response = await fetch('http://127.0.0.1:8000/api/chat/upload', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -702,7 +702,7 @@ const Community: React.FC = () => {
   // API functions
   const fetchRooms = React.useCallback(async () => {
     try {
-      const response = await fetch('https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/chat/rooms');
+      const response = await fetch('http://127.0.0.1:8000/api/chat/rooms');
       const data = await response.json();
       setRooms(data);
       if (data.length > 0 && !activeRoom) {
@@ -720,7 +720,7 @@ const Community: React.FC = () => {
 
   const fetchMessages = React.useCallback(async (roomId: string) => {
     try {
-      const response = await fetch(`https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/chat/rooms/${roomId}/messages`);
+      const response = await fetch(`http://127.0.0.1:8000/api/chat/rooms/${roomId}/messages`);
       const data = await response.json();
       setMessages(data);
     } catch (error) {
@@ -733,7 +733,7 @@ const Community: React.FC = () => {
     if (!newRoomName.trim()) return;
 
     try {
-      const response = await fetch('https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/chat/rooms', {
+      const response = await fetch('http://127.0.0.1:8000/api/chat/rooms', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

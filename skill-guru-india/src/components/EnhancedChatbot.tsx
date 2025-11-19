@@ -105,7 +105,7 @@ const EnhancedChatbot: React.FC = () => {
   const audioChunksRef = useRef<Blob[]>([]);
 
   // ✅ FIXED: Correct API URL - should point to your backend, not the chatbot service directly
- const API_BASE_URL = 'https://fastapi-backend-fixed-278398219986.asia-south1.run.app';   // Production backend
+ const API_BASE_URL = 'https://chatbot-service-i0vy.onrender.com';   // Production backend
 
   // Initialize chatbot with welcome message
   useEffect(() => {
@@ -127,7 +127,7 @@ const EnhancedChatbot: React.FC = () => {
     setConnectionStatus("connecting");
     try {
       // ✅ FIXED: Correct field names in snake_case
-      const response = await fetch(`${API_BASE_URL}/api/chat/enhanced`, {
+      const response = await fetch(`${API_BASE_URL}/chat/enhanced`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -193,7 +193,7 @@ const EnhancedChatbot: React.FC = () => {
 
       console.log('Sending request:', requestBody);
 
-      const response = await fetch(`${API_BASE_URL}/api/chat/enhanced`, {
+      const response = await fetch(`${API_BASE_URL}/chat/enhanced`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',

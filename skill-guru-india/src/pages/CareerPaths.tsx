@@ -4,7 +4,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import RoadmapGenerator from '../components/RoadmapGenerator';
 import RoadmapVisualizer from '../components/RoadmapVisualizer';
 import NodeDetailsPanel from '../components/NodeDetailsPanel';
-import Header from '../components/Nodeheader';
+import Header from '../components/Header';
 import { generateSessionId } from '../utils/helpers';
 
 

@@ -16,7 +16,7 @@ node_modules/
 __pycache__/
 *.pyc
 
-backend/electric-medium-472710-f8-f591187ebed6.json
+backend/serviceAccountKey.json
 
 backend/.env
 
@@ -70,4 +70,7 @@ service-account.json
 
 resume/key.json
 resume/key.json
-resume/key.json
+Student-Advisor-Portal/resume/key.json
+Student-Advisor-Portal/chatbot/key.json
+Student-Advisor-Portal/mentor/serviceAccountKey.json
+Student-Advisor-Portal/question/key.json

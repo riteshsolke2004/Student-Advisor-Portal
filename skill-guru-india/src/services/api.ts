@@ -2,7 +2,7 @@
 import axios from 'axios';
 
 // FORCE CLOUD RUN URL - This ensures it always uses your deployed service
-const CLOUD_RUN_URL = 'https://mentor-app-278398219986.us-central1.run.app';
+const CLOUD_RUN_URL = 'https://mentor-service.onrender.com';
 
 // Environment configuration
 const getApiConfig = () => {

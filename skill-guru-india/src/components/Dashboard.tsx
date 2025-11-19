@@ -535,7 +535,7 @@ You have a strong foundation, Shreyash, and I'm excited to see where your talent
 
     // First, check if cached recommendations exist
     const cachedResponse = await fetch(
-      `https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/career-recommendations/cached/${encodeURIComponent(user.email)}`
+      `https://skill-recommendation-service.onrender.com/api/career-recommendations/cached/${encodeURIComponent(user.email)}`
     );
 
     if (cachedResponse.ok) {
@@ -552,7 +552,7 @@ You have a strong foundation, Shreyash, and I'm excited to see where your talent
 
     // If no cached recommendations, generate new ones
     const generateResponse = await fetch(
-      `https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/career-recommendations/generate/${encodeURIComponent(user.email)}?use_resume=true&force_refresh=false`,
+      `https://skill-recommendation-service.onrender.com/api/career-recommendations/generate/${encodeURIComponent(user.email)}?use_resume=true&force_refresh=false`,
       {
         method: "POST",
         headers: {

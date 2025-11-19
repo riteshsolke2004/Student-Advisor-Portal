@@ -106,9 +106,8 @@ const ResumeAnalysis = () => {
 
     // Try multiple API endpoints in order of preference
     const apiEndpoints = [
-      'https://fastapi-backend-fixed-278398219986.asia-south1.run.app/api/resume/analyze',
-      'https://chatbot-app-278398219986.us-central1.run.app/api/resume/analyze',
-      'https:fastapi-backend-fixed-278398219986.asia-south1.run.app/api/resume/analyze' // Replace with your actual domain
+      'https://resume-service-hf2q.onrender.com/analyze_resume/',
+
     ];
 
     let lastError = null;
