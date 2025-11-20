@@ -1,108 +1,107 @@
 # database/routes/resume_routes.py
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, Form
 import httpx
 import logging
 from datetime import datetime
+from firebase_admin import firestore
 
-# Create router instance
-router = APIRouter()
+router = APIRouter(prefix="/api")
 logger = logging.getLogger(__name__)
 
-# Cloud Run URL
-CLOUD_RUN_MODEL_URL = "https://resume-service-hf2q.onrender.com"
+# ✅ YOUR HOSTED SERVICE
+CLOUD_RUN_MODEL_URL = "https://skill-recommendation-service.onrender.com"
 
 @router.post("/analyze_resume")
-async def analyze_resume(
-    email: str = Form(...),
-    resume: UploadFile = File(...)
-):
-    """Analyze resume using Cloud Run model"""
+async def analyze_resume(email: str = Form(...)):
+    """Analyze resume from Cloudinary via hosted ML service"""
     try:
-        logger.info(f"Starting resume analysis for: {email}")
+        logger.info(f"📊 Starting resume analysis for: {email}")
         
-        # Read file content
-        content = await resume.read()
+        # Get resume URL from Firestore
+        db = firestore.client()
+        doc_ref = db.collection('user_documents').document(email)
+        doc = doc_ref.get()
         
-        # Basic validation
-        if len(content) > 10 * 1024 * 1024:  # 10MB
-            raise HTTPException(status_code=400, detail="File too large. Maximum size is 10MB.")
+        if not doc.exists:
+            raise HTTPException(status_code=404, detail="No resume found")
         
-        logger.info(f"Sending file to Cloud Run: {resume.filename}")
+        doc_data = doc.to_dict()
+        resume_url = doc_data.get('resumeUrl')
+        resume_filename = doc_data.get('resumeFilename', 'resume.pdf')
         
-        # Forward to Cloud Run
+        if not resume_url:
+            raise HTTPException(status_code=404, detail="Resume URL not found")
+        
+        logger.info(f"📄 Resume URL: {resume_url}")
+        
+        # Download from Cloudinary
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            download_response = await client.get(resume_url)
+            resume_content = download_response.content
+            logger.info(f"✅ Downloaded ({len(resume_content)} bytes)")
+        
+        # ✅ FIXED: Use correct endpoint with DASH
         async with httpx.AsyncClient(timeout=120.0) as client:
-            files = {
-                "file": (
-                    resume.filename,
-                    content,
-                    resume.content_type or "application/pdf"
-                )
-            }
+            files = {"file": (resume_filename, resume_content, "application/pdf")}
             
+            # ✅ CORRECT: /analyze-resume/ (with dash)
             response = await client.post(
-                f"{CLOUD_RUN_MODEL_URL}/analyze_resume/", 
+                f"{CLOUD_RUN_MODEL_URL}/analyze-resume/",
                 files=files
             )
             
             if response.status_code != 200:
                 error_text = response.text
-                logger.error(f"Cloud Run error {response.status_code}: {error_text}")
-                raise HTTPException(
-                    status_code=500, 
-                    detail=f"Analysis service error: {response.status_code}"
-                )
+                logger.error(f"ML Model error {response.status_code}: {error_text}")
+                raise HTTPException(status_code=500, detail=f"Analysis failed: {error_text}")
             
             analysis_result = response.json()
-            logger.info("Analysis completed successfully")
+            logger.info("✅ Analysis completed")
         
-        # Return formatted response
+        # Save to Firestore
+        db.collection('resume_analysis').document(email).set({
+            "userEmail": email,
+            "resumeUrl": resume_url,
+            "analysis": analysis_result,
+            "analyzedAt": firestore.SERVER_TIMESTAMP,
+            "status": "completed"
+        })
+        
         return {
             "success": True,
             "user_email": email,
-            "resume_filename": resume.filename,
-            "file_size": len(content),
-            "analysis": analysis_result,
-            "metadata": {
-                "analyzed_at": datetime.now().isoformat(),
-                "content_type": resume.content_type
-            }
+            "analysis": analysis_result
         }
         
     except HTTPException:
         raise
-    except httpx.TimeoutException:
-        logger.error("Request timeout")
-        raise HTTPException(status_code=408, detail="Analysis request timeout")
-    except httpx.RequestError as e:
-        logger.error(f"Request error: {e}")
-        raise HTTPException(status_code=503, detail="Unable to connect to analysis service")
     except Exception as e:
-        logger.error(f"Unexpected error: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"❌ Error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-@router.get("/api/resume/test")
-async def test_resume_routes():
-    """Test endpoint to verify routes are working"""
-    return {
-        "message": "Resume analysis routes are working!",
-        "timestamp": datetime.now().isoformat(),
-        "cloud_run_url": CLOUD_RUN_MODEL_URL
-    }
 
-@router.get("/api/resume/health")
-async def health_check():
-    """Health check for Cloud Run service"""
+@router.get("/analysis/{email}")
+async def get_analysis_results(email: str):
+    """Get saved analysis results"""
     try:
-        async with httpx.AsyncClient(timeout=10.0) as client:
-            response = await client.get(f"{CLOUD_RUN_MODEL_URL}/")
-            return {
-                "status": "healthy" if response.status_code == 200 else "unhealthy",
-                "cloud_run_status": response.status_code,
-                "timestamp": datetime.now().isoformat()
-            }
+        db = firestore.client()
+        doc = db.collection('resume_analysis').document(email).get()
+        
+        if not doc.exists:
+            raise HTTPException(status_code=404, detail="No analysis found")
+        
+        return {"success": True, "data": doc.to_dict()}
+    except HTTPException:
+        raise
     except Exception as e:
-        return {
-            "status": "unhealthy",
-            "error": str(e),
-            "timestamp": datetime.now().isoformat()
-        }
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/resume/test")
+async def test_resume_routes():
+    """Test endpoint"""
+    return {
+        "message": "Resume analysis routes working!",
+        "timestamp": datetime.now().isoformat(),
+        "model_url": CLOUD_RUN_MODEL_URL
+    }

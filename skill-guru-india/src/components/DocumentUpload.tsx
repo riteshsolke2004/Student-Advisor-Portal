@@ -146,75 +146,79 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isFormValid) {
-      toast({
-        title: "Form incomplete",
-        description: "Please upload your resume and fill in required fields.",
-        variant: "destructive",
-      });
-      return;
+  e.preventDefault();
+  if (!isFormValid) {
+    toast({
+      title: "Form incomplete",
+      description: "Please upload your resume and fill in required fields.",
+      variant: "destructive",
+    });
+    return;
+  }
+
+  console.log("🚀 Starting document upload for:", userEmail);
+  setIsLoading(true);
+
+  try {
+    const formDataPayload = new FormData();
+    
+    // ✅ FIXED: Use snake_case to match backend
+    formDataPayload.append('domain', formData.domain);
+    formDataPayload.append('portfolio_url', formData.portfolioUrl);
+    formDataPayload.append('linkedin_url', socialLinks.linkedin);
+    formDataPayload.append('github_url', socialLinks.github);
+    formDataPayload.append('personal_portfolio_url', socialLinks.portfolio);
+    
+    // Add resume file
+    if (resumeFile) {
+      formDataPayload.append('resume', resumeFile.file);
+    }
+    
+    // Add certificate files
+    certificates.forEach((cert) => {
+      formDataPayload.append('certificates', cert.file);
+    });
+
+    console.log("📦 Uploading documents...");
+
+    // ✅ FIXED: URL uses path parameter for email
+    const response = await fetch(
+      `http://127.0.0.1:8000/api/documents/upload/${userEmail}`,
+      {
+        method: "POST",
+        body: formDataPayload,
+      }
+    );
+
+    console.log("📡 Response status:", response.status);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Server error response:", errorText);
+      throw new Error(`Failed to upload documents: ${response.status} ${errorText}`);
     }
 
-    console.log("🚀 Starting document upload for:", userEmail);
-    setIsLoading(true);
+    const result = await response.json();
+    console.log("✅ Documents uploaded successfully:", result);
 
-    try {
-      const formDataPayload = new FormData();
-      
-      formDataPayload.append('userEmail', userEmail);
-      formDataPayload.append('domain', formData.domain);
-      formDataPayload.append('portfolioUrl', formData.portfolioUrl);
-      formDataPayload.append('linkedinUrl', socialLinks.linkedin);
-      formDataPayload.append('githubUrl', socialLinks.github);
-      formDataPayload.append('personalPortfolioUrl', socialLinks.portfolio);
-      
-      if (resumeFile) {
-        formDataPayload.append('resume', resumeFile.file);
-      }
-      
-      certificates.forEach((cert, index) => {
-        formDataPayload.append(`certificates`, cert.file);
-      });
+    toast({
+      title: "Documents uploaded successfully!",
+      description: "Your files have been saved securely to Cloudinary.",
+    });
+    
+    onNext();
+  } catch (error: any) {
+    console.error("❌ Failed to upload documents:", error);
+    toast({
+      title: "Upload failed",
+      description: error?.message || "Error uploading documents. Please try again.",
+      variant: "destructive",
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
-      console.log("📦 Uploading documents...");
-
-      const response = await fetch(
-        `http://127.0.0.1:8000/api/documents/upload/${userEmail}`,
-        {
-          method: "POST",
-          body: formDataPayload,
-        }
-      );
-
-      console.log("📡 Response status:", response.status);
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("❌ Server error response:", errorText);
-        throw new Error(`Failed to upload documents: ${response.status} ${errorText}`);
-      }
-
-      const result = await response.json();
-      console.log("✅ Documents uploaded successfully:", result);
-
-      toast({
-        title: "Documents uploaded successfully!",
-        description: "Your files have been saved securely.",
-      });
-      
-      onNext();
-    } catch (error) {
-      console.error("❌ Failed to upload documents:", error);
-      toast({
-        title: "Upload failed",
-        description: `Error uploading documents: ${error.message}. Please try again.`,
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSocialLinkChange = (platform: string, value: string) => {
     setSocialLinks(prev => ({ ...prev, [platform]: value }));

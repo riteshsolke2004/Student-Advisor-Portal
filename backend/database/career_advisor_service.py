@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class CareerAdvisorService:
     def __init__(self):
         # Your Cloud Run endpoint
-        self.model_url = "https://career-advisor-278398219986.asia-south1.run.app"
+        self.model_url = "https://skill-recommendation-service.onrender.com"
         self.timeout = 60.0  # 60 seconds timeout for ML model
         
     def _get_db(self):

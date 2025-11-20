@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, status, Depends
+from fastapi import APIRouter, HTTPException, status, Depends, Body
 from fastapi.responses import JSONResponse
 import logging
 from typing import Optional
@@ -10,13 +10,9 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/profile", tags=["profile"])
 
-# For now, we'll use a simple user_id parameter. 
-# In a real app, you'd get this from JWT token or session
+# Simple user_id parameter
 async def get_current_user_id(user_id: str) -> str:
-    """
-    Placeholder for user authentication.
-    In production, replace this with proper JWT token validation.
-    """
+    """Placeholder for user authentication"""
     if not user_id or len(user_id.strip()) == 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -27,20 +23,35 @@ async def get_current_user_id(user_id: str) -> str:
 @router.post("/", response_model=ProfileResponse)
 async def create_profile(
     user_id: str,
-    request: UserProfile,   # <-- accept directly
-    current_user_id: str = Depends(get_current_user_id)
+    personalInfo: dict = Body(...),
+    careerInfo: dict = Body(...),
+    academicBackground: dict = Body(default=None)
 ):
+    """Create a new user profile"""
     try:
-        profile_response = await profile_service.create_profile(
-            current_user_id,
-            request   # <-- already UserProfile
+        logger.info(f"Creating profile for user: {user_id}")
+        logger.info(f"Personal Info: {personalInfo}")
+        logger.info(f"Career Info: {careerInfo}")
+        logger.info(f"Academic Background: {academicBackground}")
+        
+        # Construct UserProfile from request data
+        profile_data = UserProfile(
+            personalInfo=personalInfo,
+            careerInfo=careerInfo,
+            academicBackground=academicBackground
         )
+        
+        profile_response = await profile_service.create_profile(
+            user_id,
+            profile_data
+        )
+        
+        logger.info(f"✅ Profile created successfully for {user_id}")
         return profile_response
+        
     except Exception as e:
-        logger.error(f"Error creating profile: {str(e)}")
-        raise HTTPException(status_code=500, detail="Failed to create profile")
-
-
+        logger.error(f"❌ Error creating profile: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create profile: {str(e)}")
 
 @router.get("/{user_id}", response_model=ProfileResponse)
 async def get_profile(
@@ -75,14 +86,12 @@ async def update_profile(
 ):
     """Update user profile"""
     try:
-        # Update profile (creates if doesn't exist)
         profile_response = await profile_service.update_profile(
             user_id, 
             request.profile
         )
         
         logger.info(f"Profile updated successfully for user {user_id}")
-        
         return profile_response
         
     except Exception as e:
@@ -107,7 +116,6 @@ async def delete_profile(
             )
         
         logger.info(f"Profile deleted successfully for user {user_id}")
-        
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={"message": "Profile deleted successfully"}
@@ -140,37 +148,4 @@ async def check_profile_exists(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to check profile existence"
-        )
-
-# Health check endpoint for profile service
-@router.get("/health/check")
-async def profile_health_check():
-    """Health check for profile service"""
-    try:
-        # Test database connection
-        from database.firestore import firestore_db
-        db = firestore_db.get_db()
-        
-        # Simple test query
-        test_collection = db.collection("user_profiles").limit(1)
-        list(test_collection.stream())  # Execute query
-        
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={
-                "status": "healthy",
-                "service": "profile",
-                "database": "connected"
-            }
-        )
-        
-    except Exception as e:
-        logger.error(f"Profile service health check failed: {str(e)}")
-        return JSONResponse(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            content={
-                "status": "unhealthy",
-                "service": "profile",
-                "error": str(e)
-            }
         )

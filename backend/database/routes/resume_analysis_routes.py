@@ -8,9 +8,9 @@ router = APIRouter()
 logger = logging.getLogger(__name__)
 
 # Your Cloud Run model URL
-CLOUD_RUN_MODEL_URL = "https://resume-ats-app-278398219986.us-central1.run.app"
+CLOUD_RUN_MODEL_URL = "https://resume-service-hf2q.onrender.com"
 
-@router.post("/api/resume/analyze")
+@router.post("/analyze_resume")
 async def analyze_resume(
     email: str = Form(..., description="User email"),
     resume: UploadFile = File(..., description="Resume file (PDF/DOC/DOCX)")

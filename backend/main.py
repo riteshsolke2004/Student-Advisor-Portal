@@ -29,7 +29,8 @@ from database.route import router as career_router
 from database.routes.profile_routes import router as profile_router 
 from database.routes.career_form_router import router as career_form_router
 from database.routes.career_recommendations_routes import router as career_recommendations_router
-
+from database.document_service import document_service
+from database.routes import quiz_routes
 # Import new resume routes
 from database.routes.resume_routes import router as resume_router
 
@@ -85,7 +86,7 @@ app.add_middleware(
         "http://localhost:8080",
         "http://localhost:5173",
         "http://127.0.0.1:8000",
-        "https://your-frontend-domain.com",
+        "https://student-advisor-portal.vercel.app/",
         "*"
     ],
     allow_credentials=True,
@@ -104,6 +105,7 @@ app.include_router(profile_router, tags=["profile"])
 app.include_router(career_form_router, tags=["career-form"])
 app.include_router(career_recommendations_router, tags=["career-recommendations"])
 app.include_router(resume_router, tags=["resume-analysis"])
+app.include_router(quiz_routes.router)
 
 logger.info("✅ Resume analysis routes loaded")
 
@@ -112,93 +114,79 @@ if CHAT_ENABLED:
     app.include_router(chat_router, tags=["chat"])
     logger.info("✅ Chat routes loaded")
 
-# ==================== FIREBASE STORAGE DOCUMENT UPLOAD ====================
+# ==================== CLOUDINARY DOCUMENT UPLOAD ====================
+
+
+from models.document import DocumentType  # ✅ ADD THIS IMPORT AT TOP
+
+# In main.py - Update the upload_documents_cloudinary function
 
 @app.post("/api/documents/upload/{user_email}")
-async def upload_documents_firebase(
+async def upload_documents_cloudinary(
     user_email: str,
     resume: UploadFile = File(...),
     certificates: List[UploadFile] = File(default=[]),
     domain: str = Form(...),
-    portfolioUrl: str = Form(default=""),
-    linkedinUrl: str = Form(default=""),
-    githubUrl: str = Form(default=""),
-    personalPortfolioUrl: str = Form(default="")
+    portfolio_url: str = Form(default=""),
+    linkedin_url: str = Form(default=""),
+    github_url: str = Form(default=""),
+    personal_portfolio_url: str = Form(default="")
 ):
     """
-    Upload user documents to Firebase Storage
+    Upload user documents to Cloudinary and AUTO-CREATE PROFILE
     """
     try:
-        if not FIREBASE_STORAGE_ENABLED or firebase_bucket is None:
-            raise HTTPException(
-                status_code=503,
-                detail="Firebase Storage not available. Please check configuration."
-            )
-        
         logger.info(f"📤 Starting document upload for user: {user_email}")
         
-        # Sanitize email for folder name
-        user_folder = user_email.replace("@", "_at_").replace(".", "_")
-        
-        # Upload Resume
+        # Upload Resume to Cloudinary
         resume_url = None
+        resume_public_id = None
         resume_filename = None
+        
         if resume and resume.filename:
             logger.info(f"📄 Uploading resume: {resume.filename}")
             
-            # Create unique filename
-            file_extension = resume.filename.split('.')[-1]
-            resume_filename = f"resumes/{user_folder}/{uuid.uuid4()}.{file_extension}"
+            folder_path = document_service._generate_cloudinary_folder(user_email, DocumentType.RESUME)
             
-            # Read file content
-            resume_content = await resume.read()
-            
-            # Create blob and upload
-            resume_blob = firebase_bucket.blob(resume_filename)
-            resume_blob.upload_from_string(
-                resume_content,
-                content_type=resume.content_type or 'application/pdf'
+            success, public_url, public_id, error_msg = await document_service._upload_to_cloudinary(
+                resume, 
+                folder_path
             )
             
-            # Generate signed URL (valid for 1 year)
-            resume_url = resume_blob.generate_signed_url(
-                expiration=timedelta(days=365),
-                version="v4"
-            )
+            if not success:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Resume upload failed: {error_msg}"
+                )
             
-            logger.info(f"✅ Resume uploaded successfully: {resume_filename}")
+            resume_url = public_url
+            resume_public_id = public_id
+            resume_filename = resume.filename
+            
+            logger.info(f"✅ Resume uploaded successfully: {public_id}")
         
-        # Upload Certificates
+        # Upload Certificates to Cloudinary
         certificate_urls = []
         if certificates:
             logger.info(f"📜 Uploading {len(certificates)} certificate(s)")
             
             for idx, cert in enumerate(certificates):
                 if cert.filename:
-                    # Create unique filename
-                    file_extension = cert.filename.split('.')[-1]
-                    cert_filename = f"certificates/{user_folder}/{uuid.uuid4()}.{file_extension}"
+                    folder_path = document_service._generate_cloudinary_folder(user_email, DocumentType.CERTIFICATE)
                     
-                    # Read certificate content
-                    cert_content = await cert.read()
-                    
-                    # Create blob and upload
-                    cert_blob = firebase_bucket.blob(cert_filename)
-                    cert_blob.upload_from_string(
-                        cert_content,
-                        content_type=cert.content_type or 'application/pdf'
+                    success, public_url, public_id, error_msg = await document_service._upload_to_cloudinary(
+                        cert, 
+                        folder_path
                     )
                     
-                    # Generate signed URL
-                    cert_url = cert_blob.generate_signed_url(
-                        expiration=timedelta(days=365),
-                        version="v4"
-                    )
+                    if not success:
+                        logger.error(f"Certificate upload failed: {error_msg}")
+                        continue
                     
                     certificate_urls.append({
                         "filename": cert.filename,
-                        "url": cert_url,
-                        "storage_path": cert_filename
+                        "url": public_url,
+                        "storage_path": public_id
                     })
                     
                     logger.info(f"✅ Certificate {idx + 1} uploaded: {cert.filename}")
@@ -210,13 +198,14 @@ async def upload_documents_firebase(
             doc_data = {
                 "userEmail": user_email,
                 "domain": domain,
-                "portfolioUrl": portfolioUrl,
-                "linkedinUrl": linkedinUrl,
-                "githubUrl": githubUrl,
-                "personalPortfolioUrl": personalPortfolioUrl,
+                "portfolioUrl": portfolio_url,
+                "linkedinUrl": linkedin_url,
+                "githubUrl": github_url,
+                "personalPortfolioUrl": personal_portfolio_url,
                 "resumeUrl": resume_url,
-                "resumeFilename": resume.filename if resume else None,
-                "resumeStoragePath": resume_filename,
+                "resumeFilename": resume_filename,
+                "resumeStoragePath": resume_public_id,
+                "storageProvider": "cloudinary",
                 "certificates": certificate_urls,
                 "uploadedAt": firestore.SERVER_TIMESTAMP,
                 "totalCertificates": len(certificate_urls)
@@ -229,24 +218,67 @@ async def upload_documents_firebase(
         except Exception as firestore_error:
             logger.warning(f"⚠️ Failed to save metadata to Firestore: {firestore_error}")
         
+        # ✅ NEW: AUTO-CREATE PROFILE AFTER DOCUMENT UPLOAD
+        try:
+            from database.profile_service import profile_service
+            from models.profile import UserProfile, PersonalInfo, CareerInfo, AcademicBackground
+            
+            logger.info(f"🔄 Auto-creating profile for {user_email}")
+            
+            # Check if profile already exists
+            existing_profile = await profile_service.get_profile(user_email)
+            
+            if not existing_profile:
+                # Create new profile with uploaded data
+                profile_data = UserProfile(
+                    personalInfo=PersonalInfo(
+                        name="",  # Will be filled from auth or later
+                        email=user_email,
+                        phone="",
+                        location=""
+                    ),
+                    careerInfo=CareerInfo(
+                        currentRole=domain or "N/A",
+                        industry=domain or "N/A",
+                        expectedSalary="N/A",
+                        preferredLocation="N/A"
+                    ),
+                    academicBackground=AcademicBackground(
+                        educationLevel="",
+                        fieldOfStudy=domain or "",
+                        yearsOfExperience="0",
+                        interests=[]
+                    ) if domain else None
+                )
+                
+                await profile_service.create_profile(user_email, profile_data)
+                logger.info(f"✅ Profile auto-created for {user_email}")
+            else:
+                logger.info(f"Profile already exists for {user_email}")
+                
+        except Exception as profile_error:
+            logger.warning(f"⚠️ Failed to auto-create profile: {profile_error}")
+            # Don't fail the entire upload if profile creation fails
+        
         return {
             "success": True,
-            "message": "Documents uploaded successfully to Firebase Storage",
+            "message": "Documents uploaded successfully to Cloudinary",
             "user_email": user_email,
             "resume": {
-                "filename": resume.filename if resume else None,
+                "filename": resume_filename,
                 "url": resume_url,
-                "storage_path": resume_filename
+                "storage_path": resume_public_id
             },
             "certificates": certificate_urls,
             "certificate_count": len(certificate_urls),
+            "storage_provider": "cloudinary",
             "metadata": {
                 "domain": domain,
-                "portfolioUrl": portfolioUrl,
+                "portfolioUrl": portfolio_url,
                 "socialLinks": {
-                    "linkedin": linkedinUrl,
-                    "github": githubUrl,
-                    "portfolio": personalPortfolioUrl
+                    "linkedin": linkedin_url,
+                    "github": github_url,
+                    "portfolio": personal_portfolio_url
                 }
             }
         }
@@ -259,6 +291,7 @@ async def upload_documents_firebase(
             status_code=500,
             detail=f"Resume upload failed: {str(e)}"
         )
+
 
 
 @app.get("/api/documents/{user_email}")
@@ -292,45 +325,38 @@ async def get_user_documents(user_email: str):
 
 @app.delete("/api/documents/{user_email}/resume")
 async def delete_resume(user_email: str):
-    """Delete user's resume from Firebase Storage"""
+    """Delete user's resume from Cloudinary"""
     try:
-        if not FIREBASE_STORAGE_ENABLED or firebase_bucket is None:
-            raise HTTPException(
-                status_code=503,
-                detail="Firebase Storage not available"
-            )
+        # Get document metadata from Firestore
+        db = firestore.client()
+        doc_ref = db.collection('user_documents').document(user_email)
+        doc = doc_ref.get()
         
-        user_folder = user_email.replace("@", "_at_").replace(".", "_")
-        
-        # List all blobs in user's resume folder
-        blobs = list(firebase_bucket.list_blobs(prefix=f"resumes/{user_folder}/"))
-        
-        if not blobs:
+        if not doc.exists:
             raise HTTPException(
                 status_code=404,
                 detail="No resume found for this user"
             )
         
-        # Delete all resume files
-        for blob in blobs:
-            blob.delete()
-            logger.info(f"🗑️ Deleted: {blob.name}")
+        doc_data = doc.to_dict()
+        resume_public_id = doc_data.get('resumeStoragePath')
+        
+        if resume_public_id:
+            # ✅ FIXED: Added await keyword
+            await document_service._delete_from_cloudinary(resume_public_id, resource_type="raw")
+            logger.info(f"🗑️ Deleted resume: {resume_public_id}")
         
         # Update Firestore
-        try:
-            db = firestore.client()
-            db.collection('user_documents').document(user_email).update({
-                "resumeUrl": None,
-                "resumeFilename": None,
-                "resumeStoragePath": None
-            })
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to update Firestore: {e}")
+        db.collection('user_documents').document(user_email).update({
+            "resumeUrl": None,
+            "resumeFilename": None,
+            "resumeStoragePath": None
+        })
         
         return {
             "success": True,
             "message": "Resume deleted successfully",
-            "deleted_files": len(blobs)
+            "deleted_id": resume_public_id
         }
     
     except HTTPException:

@@ -25,3 +25,4 @@ pillow==10.1.0  # For image processing/validation
 httpx
 asyncio
 python-multipart
+cloudinary

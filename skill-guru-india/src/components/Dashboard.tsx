@@ -462,6 +462,63 @@ const Dashboard = () => {
   const [careerRecommendation, setCareerRecommendation] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
+  const [analysis, setAnalysis] = useState<any>(null);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+
+// ✅ REPLACE THIS ENTIRE useEffect BLOCK
+useEffect(() => {
+  const fetchResumeAnalysis = async () => {
+    try {
+      const userEmail = localStorage.getItem('userEmail');
+      if (!userEmail) {
+        console.log('No user email found');
+        return;
+      }
+
+      setAnalysisLoading(true);
+      console.log('📊 Starting analysis for:', userEmail);
+
+      // Create FormData
+      const formData = new FormData();
+      formData.append('email', userEmail);
+
+      // ✅ Call YOUR local backend (which handles Cloudinary + ML service)
+      const response = await fetch(
+        'http://127.0.0.1:8000/api/analyze_resume',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          },
+          body: formData
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ Analysis failed:', errorText);
+        throw new Error(`Analysis failed: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Analysis completed:', result);
+      
+      setAnalysis(result.analysis);
+      setAnalysisLoading(false);
+
+    } catch (err: any) {
+      console.error('❌ Error:', err);
+      setAnalysisError(err.message);
+      setAnalysisLoading(false);
+    }
+  };
+
+  fetchResumeAnalysis();
+}, []);
+
+
+
   // Sample AI response - replace this with actual API call
   const sampleAIResponse = `Career Recommendations 
 ------------------------------
@@ -535,7 +592,7 @@ You have a strong foundation, Shreyash, and I'm excited to see where your talent
 
     // First, check if cached recommendations exist
     const cachedResponse = await fetch(
-      `https://skill-recommendation-service.onrender.com/api/career-recommendations/cached/${encodeURIComponent(user.email)}`
+      `http://127.0.0.1:8000/api/career-recommendations/cached/${encodeURIComponent(user.email)}`
     );
 
     if (cachedResponse.ok) {
@@ -552,7 +609,7 @@ You have a strong foundation, Shreyash, and I'm excited to see where your talent
 
     // If no cached recommendations, generate new ones
     const generateResponse = await fetch(
-      `https://skill-recommendation-service.onrender.com/api/career-recommendations/generate/${encodeURIComponent(user.email)}?use_resume=true&force_refresh=false`,
+      `http://127.0.0.1:8000/api/career-recommendations/generate/${encodeURIComponent(user.email)}?use_resume=true&force_refresh=false`,
       {
         method: "POST",
         headers: {
@@ -924,12 +981,13 @@ You have a strong foundation, Shreyash, and I'm excited to see where your talent
 
         {/* Action Button */}
         <div className="pt-6 border-t border-gray-100">
+          <Link to="/career-paths">
           <button className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all duration-200 transform hover:scale-105">
             <span style={{ fontFamily: 'Google Sans, sans-serif' }}>
               Get Detailed Career Analysis
             </span>
             <i className="material-icons text-lg">arrow_forward</i>
-          </button>
+          </button></Link>
         </div>
       </CardContent>
     </Card>

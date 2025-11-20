@@ -2,18 +2,16 @@ import logging
 import uuid
 import os
 from datetime import datetime
-from typing import List, Optional, Dict, Any, Tuple
+from typing import List, Optional, Tuple
 from fastapi import UploadFile, HTTPException
-import aiofiles
 from pathlib import Path
 from dotenv import load_dotenv
-load_dotenv()
 
-# Google Cloud Storage imports (you'll need to install: pip install google-cloud-storage)
-from google.cloud import storage
-from google.cloud.exceptions import GoogleCloudError
+# Cloudinary imports
+import cloudinary
+import cloudinary.uploader
+from cloudinary.exceptions import Error as CloudinaryError
 
-# Firebase imports
 from .firestore import firestore_db
 from models.document import (
     DocumentUploadInfo, 
@@ -26,26 +24,33 @@ from models.document import (
     DocumentUploadResponse
 )
 
+load_dotenv()
 logger = logging.getLogger(__name__)
+
+# Configure Cloudinary
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True
+)
 
 class DocumentService:
     def __init__(self):
         self.collection_name = "user_documents"
         self.validation_rules = FileUploadValidation()
         
-        # GCP Storage configuration
-        self.gcp_project_id = os.getenv("GCP_PROJECT_ID", "your-project-id")
-        self.gcp_bucket_name = os.getenv("GCP_STORAGE_BUCKET", "your-bucket-name")
-        
-        # Initialize GCP Storage client
+        # Verify Cloudinary configuration
         try:
-            self.storage_client = storage.Client(project=self.gcp_project_id)
-            self.bucket = self.storage_client.bucket(self.gcp_bucket_name)
-            logger.info(f"✅ GCP Storage initialized - Bucket: {self.gcp_bucket_name}")
+            if not all([
+                os.getenv("CLOUDINARY_CLOUD_NAME"),
+                os.getenv("CLOUDINARY_API_KEY"),
+                os.getenv("CLOUDINARY_API_SECRET")
+            ]):
+                raise Exception("Cloudinary credentials not configured")
+            logger.info(f"✅ Cloudinary initialized - Cloud: {os.getenv('CLOUDINARY_CLOUD_NAME')}")
         except Exception as e:
-            logger.error(f"❌ Failed to initialize GCP Storage: {e}")
-            self.storage_client = None
-            self.bucket = None
+            logger.error(f"❌ Failed to initialize Cloudinary: {e}")
     
     def _get_db(self):
         """Get Firestore database instance"""
@@ -63,9 +68,6 @@ class DocumentService:
         """Validate uploaded file"""
         errors = []
         
-        # Check file size (approximate, as we can't get exact size without reading)
-        # This is a basic check - in production you might want more sophisticated validation
-        
         # Check file type
         if not self.validation_rules.validate_file_type(file.content_type, document_type):
             errors.append(f"Invalid file type: {file.content_type} for {document_type.value}")
@@ -79,47 +81,53 @@ class DocumentService:
         
         return len(errors) == 0, errors
     
-    async def _upload_to_gcp(self, file: UploadFile, file_path: str) -> Tuple[bool, Optional[str], Optional[str]]:
-        """Upload file to Google Cloud Storage"""
-        if not self.storage_client or not self.bucket:
-            logger.error("GCP Storage not properly initialized")
-            return False, None, "GCP Storage not available"
-        
+    def _generate_cloudinary_folder(self, user_email: str, document_type: DocumentType) -> str:
+        """Generate Cloudinary folder path - FIXED METHOD NAME"""
+        safe_email = user_email.replace("@", "_").replace(".", "_")
+        return f"ai-advisor/documents/{safe_email}/{document_type.value}"
+    
+    async def _upload_to_cloudinary(
+        self, 
+        file: UploadFile, 
+        folder_path: str
+    ) -> Tuple[bool, Optional[str], Optional[str], Optional[str]]:
+        """
+        Upload file to Cloudinary
+        Returns: (success, public_url, public_id, error_msg)
+        """
         try:
             # Read file content
             file_content = await file.read()
-            file.file.seek(0)  # Reset file pointer for potential re-use
+            await file.seek(0)  # Reset file pointer
             
-            # Create blob in GCP bucket
-            blob = self.bucket.blob(file_path)
+            # Determine resource type based on file extension
+            extension = self._get_file_extension(file.filename)
+            resource_type = "raw"  # For PDFs and documents
+            if extension in ['.jpg', '.jpeg', '.png', '.gif', '.webp']:
+                resource_type = "image"
             
-            # Upload file
-            blob.upload_from_string(
+            # Upload to Cloudinary
+            upload_result = cloudinary.uploader.upload(
                 file_content,
-                content_type=file.content_type
+                folder=folder_path,
+                resource_type=resource_type,
+                use_filename=True,
+                unique_filename=True,
+                overwrite=False
             )
             
-            # Make blob publicly accessible (optional - configure based on your needs)
-            # blob.make_public()
+            public_url = upload_result.get('secure_url')
+            public_id = upload_result.get('public_id')
             
-            # Get public URL (if made public)
-            public_url = None  # blob.public_url if made public
+            logger.info(f"✅ File uploaded to Cloudinary: {public_id}")
+            return True, public_url, public_id, None
             
-            logger.info(f"✅ File uploaded to GCP: {file_path}")
-            return True, public_url, None
-            
-        except GoogleCloudError as e:
-            logger.error(f"❌ GCP upload failed: {str(e)}")
-            return False, None, f"GCP upload error: {str(e)}"
+        except CloudinaryError as e:
+            logger.error(f"❌ Cloudinary upload failed: {str(e)}")
+            return False, None, None, f"Cloudinary error: {str(e)}"
         except Exception as e:
-            logger.error(f"❌ Unexpected upload error: {str(e)}")
-            return False, None, f"Upload error: {str(e)}"
-    
-    def _generate_gcp_file_path(self, user_email: str, document_type: DocumentType, filename: str) -> str:
-        """Generate GCP storage file path"""
-        timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-        safe_email = user_email.replace("@", "_").replace(".", "_")
-        return f"documents/{safe_email}/{document_type.value}/{timestamp}_{filename}"
+            logger.error(f"❌ Upload failed: {str(e)}")
+            return False, None, None, f"Upload error: {str(e)}"
     
     async def upload_documents(
         self, 
@@ -132,7 +140,7 @@ class DocumentService:
         resume_file: Optional[UploadFile],
         certificate_files: List[UploadFile]
     ) -> DocumentUploadResponse:
-        """Upload user documents and save metadata to Firebase"""
+        """Upload user documents to Cloudinary and save metadata to Firestore"""
         
         upload_session_id = self._generate_upload_session_id()
         logger.info(f"🚀 Starting document upload for {user_email} - Session: {upload_session_id}")
@@ -140,27 +148,37 @@ class DocumentService:
         try:
             uploaded_files = []
             total_size = 0
-            gcp_urls = []
+            file_urls = []
             
             # Validate and upload resume
             resume_document = None
             if resume_file:
                 is_valid, errors = self._validate_file(resume_file, DocumentType.RESUME)
                 if not is_valid:
-                    raise HTTPException(status_code=400, detail=f"Resume validation failed: {', '.join(errors)}")
+                    raise HTTPException(
+                        status_code=400, 
+                        detail=f"Resume validation failed: {', '.join(errors)}"
+                    )
                 
-                # Generate GCP file path
-                gcp_file_path = self._generate_gcp_file_path(user_email, DocumentType.RESUME, resume_file.filename)
+                # Generate Cloudinary folder path - USING FIXED METHOD
+                folder_path = self._generate_cloudinary_folder(user_email, DocumentType.RESUME)
                 
-                # Upload to GCP
-                upload_success, public_url, error_msg = await self._upload_to_gcp(resume_file, gcp_file_path)
+                # Upload to Cloudinary
+                upload_success, public_url, public_id, error_msg = await self._upload_to_cloudinary(
+                    resume_file, 
+                    folder_path
+                )
+                
                 if not upload_success:
-                    raise HTTPException(status_code=500, detail=f"Resume upload failed: {error_msg}")
+                    raise HTTPException(
+                        status_code=500, 
+                        detail=f"Resume upload failed: {error_msg}"
+                    )
                 
                 # Get file size
                 file_content = await resume_file.read()
                 file_size = len(file_content)
-                resume_file.file.seek(0)
+                await resume_file.seek(0)
                 total_size += file_size
                 
                 # Create file metadata
@@ -169,8 +187,8 @@ class DocumentService:
                     file_size=file_size,
                     content_type=resume_file.content_type,
                     file_extension=self._get_file_extension(resume_file.filename),
-                    gcp_bucket_name=self.gcp_bucket_name,
-                    gcp_file_path=gcp_file_path,
+                    gcp_bucket_name="cloudinary",
+                    gcp_file_path=public_id,
                     gcp_public_url=public_url,
                     is_valid=True,
                     validation_errors=[]
@@ -187,11 +205,12 @@ class DocumentService:
                     "type": "resume",
                     "filename": resume_file.filename,
                     "size": file_size,
-                    "gcp_path": gcp_file_path
+                    "public_id": public_id,
+                    "url": public_url
                 })
                 
                 if public_url:
-                    gcp_urls.append(public_url)
+                    file_urls.append(public_url)
                 
                 logger.info(f"✅ Resume uploaded: {resume_file.filename}")
             
@@ -199,17 +218,21 @@ class DocumentService:
             certificate_documents = []
             if certificate_files:
                 for i, cert_file in enumerate(certificate_files):
-                    if cert_file.filename:  # Skip empty file uploads
+                    if cert_file.filename:
                         is_valid, errors = self._validate_file(cert_file, DocumentType.CERTIFICATE)
                         if not is_valid:
                             logger.warning(f"Certificate {cert_file.filename} validation failed: {errors}")
                             continue
                         
-                        # Generate GCP file path
-                        gcp_file_path = self._generate_gcp_file_path(user_email, DocumentType.CERTIFICATE, cert_file.filename)
+                        # Generate Cloudinary folder path - USING FIXED METHOD
+                        folder_path = self._generate_cloudinary_folder(user_email, DocumentType.CERTIFICATE)
                         
-                        # Upload to GCP
-                        upload_success, public_url, error_msg = await self._upload_to_gcp(cert_file, gcp_file_path)
+                        # Upload to Cloudinary
+                        upload_success, public_url, public_id, error_msg = await self._upload_to_cloudinary(
+                            cert_file, 
+                            folder_path
+                        )
+                        
                         if not upload_success:
                             logger.error(f"Certificate upload failed: {error_msg}")
                             continue
@@ -217,7 +240,7 @@ class DocumentService:
                         # Get file size
                         file_content = await cert_file.read()
                         file_size = len(file_content)
-                        cert_file.file.seek(0)
+                        await cert_file.seek(0)
                         total_size += file_size
                         
                         # Create file metadata
@@ -226,8 +249,8 @@ class DocumentService:
                             file_size=file_size,
                             content_type=cert_file.content_type,
                             file_extension=self._get_file_extension(cert_file.filename),
-                            gcp_bucket_name=self.gcp_bucket_name,
-                            gcp_file_path=gcp_file_path,
+                            gcp_bucket_name="cloudinary",
+                            gcp_file_path=public_id,
                             gcp_public_url=public_url,
                             is_valid=True,
                             validation_errors=[]
@@ -246,11 +269,12 @@ class DocumentService:
                             "type": "certificate",
                             "filename": cert_file.filename,
                             "size": file_size,
-                            "gcp_path": gcp_file_path
+                            "public_id": public_id,
+                            "url": public_url
                         })
                         
                         if public_url:
-                            gcp_urls.append(public_url)
+                            file_urls.append(public_url)
                         
                         logger.info(f"✅ Certificate uploaded: {cert_file.filename}")
             
@@ -277,18 +301,18 @@ class DocumentService:
                 completed_at=datetime.utcnow()
             )
             
-            # Save to Firebase
-            await self._save_to_firebase(document_info)
+            # Save to Firestore
+            await self._save_to_firestore(document_info)
             
             return DocumentUploadResponse(
                 success=True,
-                message=f"Successfully uploaded {len(uploaded_files)} file(s)",
+                message=f"Successfully uploaded {len(uploaded_files)} file(s) to Cloudinary",
                 user_email=user_email,
                 upload_session_id=upload_session_id,
                 uploaded_files=uploaded_files,
                 total_files=len(uploaded_files),
                 total_size=total_size,
-                gcp_urls=gcp_urls,
+                gcp_urls=file_urls,
                 created_at=document_info.created_at,
                 status=DocumentStatus.COMPLETED
             )
@@ -297,15 +321,18 @@ class DocumentService:
             raise
         except Exception as e:
             logger.error(f"❌ Document upload failed for {user_email}: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Document upload failed: {str(e)}")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Document upload failed: {str(e)}"
+            )
     
-    async def _save_to_firebase(self, document_info: DocumentUploadInfo):
-        """Save document info to Firebase Firestore"""
+    async def _save_to_firestore(self, document_info: DocumentUploadInfo):
+        """Save document info to Firestore"""
         try:
             db = self._get_db()
             doc_ref = db.collection(self.collection_name).document(document_info.user_email)
             
-            # Convert to dict for Firebase storage
+            # Convert to dict for Firestore storage
             document_data = document_info.model_dump(by_alias=True)
             
             # Convert datetime objects to timestamp
@@ -317,14 +344,14 @@ class DocumentService:
             # Save to Firestore
             doc_ref.set(document_data)
             
-            logger.info(f"✅ Document info saved to Firebase for {document_info.user_email}")
+            logger.info(f"✅ Document info saved to Firestore for {document_info.user_email}")
             
         except Exception as e:
-            logger.error(f"❌ Failed to save document info to Firebase: {str(e)}")
-            raise Exception(f"Firebase save failed: {str(e)}")
+            logger.error(f"❌ Failed to save document info to Firestore: {str(e)}")
+            raise Exception(f"Firestore save failed: {str(e)}")
     
     async def get_user_documents(self, user_email: str) -> Optional[DocumentUploadInfo]:
-        """Retrieve user document information from Firebase"""
+        """Retrieve user document information from Firestore"""
         try:
             db = self._get_db()
             doc_ref = db.collection(self.collection_name).document(user_email)
@@ -335,8 +362,6 @@ class DocumentService:
                 return None
             
             data = doc.to_dict()
-            
-            # Convert back to Pydantic model
             document_info = DocumentUploadInfo.model_validate(data)
             
             logger.info(f"✅ Retrieved documents for {user_email}")
@@ -347,35 +372,31 @@ class DocumentService:
             raise Exception(f"Failed to retrieve documents: {str(e)}")
     
     async def delete_user_documents(self, user_email: str) -> bool:
-        """Delete user documents from both GCP and Firebase"""
+        """Delete user documents from both Cloudinary and Firestore"""
         try:
-            # Get document info first
             document_info = await self.get_user_documents(user_email)
             if not document_info:
                 logger.warning(f"No documents found to delete for {user_email}")
                 return False
             
-            # Delete from GCP Storage
-            if self.storage_client and self.bucket:
-                files_to_delete = []
-                
-                # Collect all file paths
-                if document_info.resume:
-                    files_to_delete.append(document_info.resume.file_metadata.gcp_file_path)
-                
-                for cert in document_info.certificates:
-                    files_to_delete.append(cert.file_metadata.gcp_file_path)
-                
-                # Delete files from GCP
-                for file_path in files_to_delete:
-                    try:
-                        blob = self.bucket.blob(file_path)
-                        blob.delete()
-                        logger.info(f"✅ Deleted from GCP: {file_path}")
-                    except Exception as e:
-                        logger.warning(f"⚠️ Failed to delete from GCP {file_path}: {e}")
+            # Delete from Cloudinary
+            public_ids_to_delete = []
             
-            # Delete from Firebase
+            if document_info.resume:
+                public_ids_to_delete.append(document_info.resume.file_metadata.gcp_file_path)
+            
+            for cert in document_info.certificates:
+                public_ids_to_delete.append(cert.file_metadata.gcp_file_path)
+            
+            # Delete files from Cloudinary
+            for public_id in public_ids_to_delete:
+                try:
+                    cloudinary.uploader.destroy(public_id, resource_type="raw")
+                    logger.info(f"✅ Deleted from Cloudinary: {public_id}")
+                except Exception as e:
+                    logger.warning(f"⚠️ Failed to delete from Cloudinary {public_id}: {e}")
+            
+            # Delete from Firestore
             db = self._get_db()
             doc_ref = db.collection(self.collection_name).document(user_email)
             doc_ref.delete()
@@ -386,9 +407,9 @@ class DocumentService:
         except Exception as e:
             logger.error(f"❌ Failed to delete documents for {user_email}: {str(e)}")
             raise Exception(f"Document deletion failed: {str(e)}")
-    
+
     async def update_document_status(self, user_email: str, status: DocumentStatus):
-        """Update document processing status"""
+        """Update document status in Firestore"""
         try:
             db = self._get_db()
             doc_ref = db.collection(self.collection_name).document(user_email)
@@ -398,7 +419,7 @@ class DocumentService:
                 "updated_at": datetime.utcnow()
             })
             
-            logger.info(f"✅ Updated status to {status.value} for {user_email}")
+            logger.info(f"✅ Updated status for {user_email} to {status.value}")
             
         except Exception as e:
             logger.error(f"❌ Failed to update status for {user_email}: {str(e)}")

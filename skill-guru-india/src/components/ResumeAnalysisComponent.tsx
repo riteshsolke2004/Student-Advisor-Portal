@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   Upload, 
   FileText, 
-  Mail, 
   AlertCircle, 
   CheckCircle, 
   Clock, 
@@ -12,7 +11,6 @@ import {
   Target,
   Zap,
   Award,
-  Eye,
   RefreshCw,
   ChevronRight,
   Star,
@@ -28,10 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 
 const ResumeAnalysis = () => {
-  const [formData, setFormData] = useState({
-    email: '',
-    resume: null
-  });
+  const [resume, setResume] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [error, setError] = useState(null);
@@ -51,7 +46,7 @@ const ResumeAnalysis = () => {
         return;
       }
 
-      setFormData(prev => ({ ...prev, resume: file }));
+      setResume(file);
       setError(null);
     }
   };
@@ -77,139 +72,132 @@ const ResumeAnalysis = () => {
     }
   };
 
-  // Enhanced error handling with CORS-specific messages
-  const getErrorMessage = (error) => {
-    if (error.message?.includes('CORS') || error.message?.includes('Failed to fetch')) {
-      return 'Connection issue: The backend service may be unavailable or not configured for CORS. Please ensure the resume analysis API is running and accessible.';
-    }
-    if (error.message?.includes('404')) {
-      return 'API endpoint not found. Please verify the backend service is running on the correct URL.';
-    }
-    if (error.message?.includes('500')) {
-      return 'Server error occurred during analysis. Please try again later.';
-    }
-    return error.message || 'An unexpected error occurred during analysis.';
-  };
+ // Handle form submission
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  
+  if (!resume) {
+    setError('Please upload a resume file.');
+    return;
+  }
 
-  // Handle form submission with improved error handling
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  setIsAnalyzing(true);
+  setError(null);
+  setAnalysisResult(null);
+
+  try {
+    console.log('📤 Uploading resume for analysis...');
     
-    if (!formData.email || !formData.resume) {
-      setError('Please provide both email and resume file.');
-      return;
-    }
+    const formData = new FormData();
+    formData.append('file', resume);
 
-    setIsAnalyzing(true);
-    setError(null);
-    setAnalysisResult(null);
-
-    // Try multiple API endpoints in order of preference
-    const apiEndpoints = [
+    const response = await fetch(
       'https://resume-service-hf2q.onrender.com/analyze_resume/',
-
-    ];
-
-    let lastError = null;
-
-    for (const endpoint of apiEndpoints) {
-      try {
-        console.log(`Attempting connection to: ${endpoint}`);
-        
-        const formDataToSend = new FormData();
-        formDataToSend.append('email', formData.email);
-        formDataToSend.append('resume', formData.resume);
-
-        const response = await fetch(endpoint, {
-          method: 'POST',
-          body: formDataToSend,
-          // Add headers to handle CORS
-          mode: 'cors',
-          credentials: 'omit', // Don't send credentials for CORS
-        });
-
-        console.log(`Response from ${endpoint}:`, response.status, response.statusText);
-        
-        // Check content type
-        const contentType = response.headers.get('content-type');
-        
-        if (response.status === 404) {
-          lastError = new Error(`API endpoint not found at ${endpoint}`);
-          continue; // Try next endpoint
-        }
-
-        let result;
-        if (contentType && contentType.includes('application/json')) {
-          result = await response.json();
-        } else {
-          const text = await response.text();
-          console.log('Non-JSON response:', text);
-          lastError = new Error(`Invalid response format from ${endpoint}`);
-          continue; // Try next endpoint
-        }
-
-        if (!response.ok) {
-          lastError = new Error(result.detail || `Request failed: ${response.status}`);
-          continue; // Try next endpoint
-        }
-
-        // Success! Set the result and exit
-        console.log('Analysis successful:', result);
-        setAnalysisResult(result);
-        setIsAnalyzing(false);
-        return;
-
-      } catch (err) {
-        console.error(`Error with ${endpoint}:`, err);
-        lastError = err;
-        // Continue to next endpoint
+      {
+        method: 'POST',
+        body: formData,
+        mode: 'cors',
+        credentials: 'omit',
       }
+    );
+
+    console.log('📡 Response status:', response.status, response.statusText);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      console.error('❌ Error response:', errorData);
+      throw new Error(errorData.detail || `Request failed with status ${response.status}`);
     }
 
-    // If we get here, all endpoints failed
-    console.error('All API endpoints failed:', lastError);
-    setError(getErrorMessage(lastError));
+    const result = await response.json();
+    console.log('✅ Raw ML Response:', result);
+    
+    // ✅ FIXED: Calculate proper total score (average of individual scores)
+    const scores = result.ats_score;
+    const totalScore = Math.round(
+      (scores.skill_score + 
+       scores.experience_score + 
+       scores.title_score + 
+       scores.education_score + 
+       scores.format_score + 
+       scores.language_score) / 6
+    );
+    
+    console.log('📊 Calculated Total Score:', totalScore);
+    
+    // Transform the response to match your UI structure
+    const formattedResult = {
+      resume_filename: resume.name,
+      metadata: {
+        analyzed_at: new Date().toISOString()
+      },
+      analysis: {
+        ats_score: {
+          skill_score: scores.skill_score || 0,
+          experience_score: scores.experience_score || 0,
+          title_score: scores.title_score || 0,
+          education_score: scores.education_score || 0,
+          format_score: scores.format_score || 0,
+          language_score: scores.language_score || 0,
+          total_score: totalScore  // ✅ Use calculated score
+        },
+        recommendations: {
+          summary: result.recommendations?.summary || "Analysis completed successfully.",
+          missing_skills: result.recommendations?.missing_skills || [],
+          improved_bullets: result.recommendations?.improved_bullets || [],
+          recommendations: result.recommendations?.recommendations || []
+        }
+      }
+    };
+    
+    console.log('✅ Formatted Result:', formattedResult);
+    setAnalysisResult(formattedResult);
     setIsAnalyzing(false);
-  };
 
-  // For development/demo purposes - simulate API response
+  } catch (err) {
+    console.error('❌ Analysis error:', err);
+    setError(err.message || 'Failed to analyze resume. Please try again.');
+    setIsAnalyzing(false);
+  }
+};
+
+
+  // Demo mode
   const simulateAnalysis = () => {
     setIsAnalyzing(true);
     setError(null);
     
-    // Simulate API delay
     setTimeout(() => {
       const mockResult = {
-        resume_filename: formData.resume.name,
+        resume_filename: resume.name,
         metadata: {
           analyzed_at: new Date().toISOString()
         },
         analysis: {
           ats_score: {
-            total_score: 78,
-            ats_compatibility: 85,
-            keyword_optimization: 72,
+            skill_score: 82,
+            experience_score: 75,
+            title_score: 88,
+            education_score: 79,
             format_score: 89,
-            content_quality: 76,
-            readability: 81,
-            section_completeness: 68
+            language_score: 85,
+            total_score: 83
           },
           recommendations: {
-            summary: "Your resume shows strong technical skills but could benefit from more quantified achievements and better keyword optimization for ATS systems. The format is professional, but some sections need enhancement.",
+            summary: "Your resume shows strong technical skills but could benefit from more quantified achievements and better keyword optimization for ATS systems.",
             missing_skills: [
               "React.js", "TypeScript", "AWS", "Docker", "Kubernetes", 
               "CI/CD", "GraphQL", "MongoDB", "Redis", "Microservices"
             ],
             improved_bullets: [
-              "<strong>Led development of</strong> customer-facing web application that <strong>increased user engagement by 40%</strong> and reduced bounce rate by 25%",
-              "<strong>Optimized database queries</strong> resulting in <strong>50% faster page load times</strong> and improved user satisfaction scores by 30%",
-              "<strong>Implemented automated testing suite</strong> that <strong>reduced bug reports by 60%</strong> and deployment time by 3 hours per release"
+              "<strong>Led development of</strong> customer-facing web application that <strong>increased user engagement by 40%</strong>",
+              "<strong>Optimized database queries</strong> resulting in <strong>50% faster page load times</strong>",
+              "<strong>Implemented automated testing suite</strong> that <strong>reduced bug reports by 60%</strong>"
             ],
             recommendations: [
-              "Add more <strong>quantified achievements</strong> to demonstrate impact and results",
+              "Add more <strong>quantified achievements</strong> to demonstrate impact",
               "Include relevant <strong>industry keywords</strong> to improve ATS compatibility",
-              "Expand the <strong>technical skills section</strong> with current technologies",
-              "Add a <strong>professional summary</strong> that highlights your key value propositions"
+              "Expand the <strong>technical skills section</strong> with current technologies"
             ]
           }
         }
@@ -222,12 +210,12 @@ const ResumeAnalysis = () => {
 
   // Reset form
   const resetForm = () => {
-    setFormData({ email: '', resume: null });
+    setResume(null);
     setAnalysisResult(null);
     setError(null);
   };
 
-  // Get score color and styling
+  // Get score color
   const getScoreColor = (score) => {
     if (score >= 90) return { color: 'text-green-600', bg: 'bg-green-50', border: 'border-green-200', ring: 'ring-green-500' };
     if (score >= 70) return { color: 'text-blue-600', bg: 'bg-blue-50', border: 'border-blue-200', ring: 'ring-blue-500' };
@@ -235,14 +223,13 @@ const ResumeAnalysis = () => {
     return { color: 'text-red-600', bg: 'bg-red-50', border: 'border-red-200', ring: 'ring-red-500' };
   };
 
-  // Comprehensive ATS Score component with enhanced UI
+  // ATS Score Card Component
   const ATSScoreCard = ({ score }) => {
     const overallScore = score.total_score;
     const scoreStyle = getScoreColor(overallScore);
 
     return (
       <div className="space-y-8">
-        {/* Overall Score - Hero Section */}
         <Card className={`border-0 rounded-3xl shadow-2xl bg-gradient-to-br from-white to-gray-50 ${scoreStyle.ring}/20 ring-2`}>
           <CardContent className="p-12">
             <div className="text-center space-y-6">
@@ -266,10 +253,10 @@ const ResumeAnalysis = () => {
                    'Significant Issues Found'}
                 </h3>
                 <p className="text-gray-600 max-w-md mx-auto" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                  {overallScore >= 90 ? 'Your resume is highly optimized for ATS systems and recruiter review.' :
+                  {overallScore >= 90 ? 'Your resume is highly optimized for ATS systems.' :
                    overallScore >= 70 ? 'Your resume is well-optimized with room for minor improvements.' :
-                   overallScore >= 50 ? 'Your resume has potential but needs several improvements for better performance.' :
-                   'Your resume requires significant optimization to improve ATS compatibility.'}
+                   overallScore >= 50 ? 'Your resume needs several improvements for better performance.' :
+                   'Your resume requires significant optimization.'}
                 </p>
               </div>
 
@@ -282,9 +269,6 @@ const ResumeAnalysis = () => {
                     />
                   ))}
                 </div>
-                <span className="text-sm text-gray-500 ml-2">
-                  ({overallScore >= 90 ? '5/5' : overallScore >= 70 ? '4/5' : overallScore >= 50 ? '3/5' : overallScore >= 30 ? '2/5' : '1/5'})
-                </span>
               </div>
             </div>
           </CardContent>
@@ -297,12 +281,12 @@ const ResumeAnalysis = () => {
             
             const itemScoreStyle = getScoreColor(value);
             const icons = {
-              ats_compatibility: 'shield',
-              keyword_optimization: 'search',
+              skill_score: 'psychology',
+              experience_score: 'work',
+              title_score: 'badge',
+              education_score: 'school',
               format_score: 'description',
-              content_quality: 'star',
-              readability: 'visibility',
-              section_completeness: 'check_circle'
+              language_score: 'translate'
             };
 
             return (
@@ -323,10 +307,7 @@ const ResumeAnalysis = () => {
                           {value}%
                         </span>
                       </div>
-                      <Progress 
-                        value={value} 
-                        className="mt-2 h-2"
-                      />
+                      <Progress value={value} className="mt-2 h-2" />
                     </div>
                   </div>
                 </CardContent>
@@ -338,13 +319,13 @@ const ResumeAnalysis = () => {
     );
   };
 
-  // Enhanced Recommendations component
+  // Recommendations Component
   const RecommendationsSection = ({ recommendations }) => {
     const { missing_skills, improved_bullets, recommendations: generalRecs, summary } = recommendations;
 
     return (
       <div className="space-y-8">
-        {/* ML Analysis Summary */}
+        {/* Summary */}
         <Card className="border-0 rounded-3xl shadow-lg bg-gradient-to-br from-purple-50 to-blue-50 border border-purple-100">
           <CardHeader className="p-8">
             <CardTitle className="flex items-center space-x-3 text-2xl font-medium text-gray-900" style={{ fontFamily: 'Google Sans, sans-serif' }}>
@@ -376,9 +357,6 @@ const ResumeAnalysis = () => {
                   {missing_skills.length} Missing
                 </Badge>
               </CardTitle>
-              <CardDescription className="text-gray-600 ml-13" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                These in-demand skills are missing from your resume
-              </CardDescription>
             </CardHeader>
             <CardContent className="p-8 pt-0">
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -398,7 +376,7 @@ const ResumeAnalysis = () => {
           </Card>
         )}
 
-        {/* Improved Bullet Points */}
+        {/* Improved Bullets */}
         {improved_bullets && improved_bullets.length > 0 && (
           <Card className="border-0 rounded-3xl shadow-lg bg-white">
             <CardHeader className="p-8">
@@ -411,9 +389,6 @@ const ResumeAnalysis = () => {
                   AI Optimized
                 </Badge>
               </CardTitle>
-              <CardDescription className="text-gray-600 ml-13" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                ML-generated improvements to make your achievements more impactful
-              </CardDescription>
             </CardHeader>
             <CardContent className="p-8 pt-0">
               <div className="space-y-4">
@@ -436,7 +411,7 @@ const ResumeAnalysis = () => {
           </Card>
         )}
 
-        {/* General Recommendations */}
+        {/* Recommendations */}
         {generalRecs && generalRecs.length > 0 && (
           <Card className="border-0 rounded-3xl shadow-lg bg-white">
             <CardHeader className="p-8">
@@ -449,9 +424,6 @@ const ResumeAnalysis = () => {
                   {generalRecs.length} Insights
                 </Badge>
               </CardTitle>
-              <CardDescription className="text-gray-600 ml-13" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                Professional guidance to enhance your resume's effectiveness
-              </CardDescription>
             </CardHeader>
             <CardContent className="p-8 pt-0">
               <div className="space-y-4">
@@ -479,7 +451,6 @@ const ResumeAnalysis = () => {
 
   return (
     <>
-      {/* Google Fonts */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       <link 
@@ -493,7 +464,6 @@ const ResumeAnalysis = () => {
 
       <div className="max-w-6xl mx-auto p-6 space-y-8">
         {!analysisResult ? (
-          // Upload Form
           <Card className="border-0 rounded-3xl shadow-2xl bg-white">
             <CardHeader className="text-center p-12">
               <div className="w-20 h-20 mx-auto bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg mb-6">
@@ -503,29 +473,12 @@ const ResumeAnalysis = () => {
                 AI-Powered Resume Analysis
               </CardTitle>
               <CardDescription className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                Upload your resume to get detailed ML-powered analysis with ATS scoring and personalized recommendations
+                Upload your resume to get detailed ML-powered ATS scoring and personalized recommendations
               </CardDescription>
             </CardHeader>
 
             <CardContent className="p-12 pt-0">
               <form onSubmit={handleSubmit} className="space-y-8">
-                {/* Email Input */}
-                <div className="space-y-3">
-                  <label className="block text-lg font-medium text-gray-900" style={{ fontFamily: 'Google Sans, sans-serif' }}>
-                    <Mail className="inline h-5 w-5 mr-2" />
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full px-4 py-4 border-2 border-gray-300 rounded-2xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-200 text-lg"
-                    placeholder="your.email@example.com"
-                    required
-                    style={{ fontFamily: 'Roboto, sans-serif' }}
-                  />
-                </div>
-
                 {/* File Upload */}
                 <div className="space-y-3">
                   <label className="block text-lg font-medium text-gray-900" style={{ fontFamily: 'Google Sans, sans-serif' }}>
@@ -544,22 +497,22 @@ const ResumeAnalysis = () => {
                     onDragOver={handleDrag}
                     onDrop={handleDrop}
                   >
-                    {formData.resume ? (
+                    {resume ? (
                       <div className="space-y-4">
                         <div className="w-16 h-16 mx-auto bg-green-100 rounded-2xl flex items-center justify-center">
                           <CheckCircle className="w-8 h-8 text-green-600" />
                         </div>
                         <div className="space-y-2">
                           <p className="text-lg font-medium text-green-600" style={{ fontFamily: 'Google Sans, sans-serif' }}>
-                            ✓ {formData.resume.name}
+                            ✓ {resume.name}
                           </p>
                           <p className="text-sm text-gray-500" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                            {(formData.resume.size / 1024 / 1024).toFixed(2)} MB • Ready for analysis
+                            {(resume.size / 1024 / 1024).toFixed(2)} MB • Ready for analysis
                           </p>
                         </div>
                         <Button
                           type="button"
-                          onClick={() => setFormData(prev => ({ ...prev, resume: null }))}
+                          onClick={() => setResume(null)}
                           variant="outline"
                           className="mt-4 rounded-full"
                         >
@@ -601,22 +554,9 @@ const ResumeAnalysis = () => {
                   <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-6">
                     <div className="flex items-start">
                       <AlertCircle className="h-6 w-6 text-red-500 mr-3 mt-0.5 flex-shrink-0" />
-                      <div className="flex-1">
-                        <span className="text-red-800 font-medium block mb-2" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                          {error}
-                        </span>
-                        {error.includes('CORS') || error.includes('Failed to fetch') ? (
-                          <div className="text-sm text-red-600">
-                            <p className="mb-2">To resolve this issue:</p>
-                            <ul className="list-disc ml-5 space-y-1">
-                              <li>Ensure your backend API server is running</li>
-                              <li>Check that CORS is properly configured in your backend</li>
-                              <li>Verify the API endpoint URL is correct</li>
-                              <li>Try the demo mode below if backend is unavailable</li>
-                            </ul>
-                          </div>
-                        ) : null}
-                      </div>
+                      <span className="text-red-800 font-medium" style={{ fontFamily: 'Roboto, sans-serif' }}>
+                        {error}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -625,7 +565,7 @@ const ResumeAnalysis = () => {
                 <div className="space-y-4">
                   <Button
                     type="submit"
-                    disabled={isAnalyzing || !formData.email || !formData.resume}
+                    disabled={isAnalyzing || !resume}
                     className="w-full h-16 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{ fontFamily: 'Google Sans, sans-serif' }}
                   >
@@ -642,7 +582,6 @@ const ResumeAnalysis = () => {
                     )}
                   </Button>
 
-                  {/* Demo Mode Button */}
                   <div className="relative">
                     <div className="absolute inset-0 flex items-center">
                       <div className="w-full border-t border-gray-300" />
@@ -657,11 +596,10 @@ const ResumeAnalysis = () => {
                   <Button
                     type="button"
                     onClick={simulateAnalysis}
-                    disabled={!formData.email || !formData.resume}
+                    disabled={!resume}
                     variant="outline"
                     className="w-full h-12 border-2 border-gray-300 hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-600 rounded-2xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{ fontFamily: 'Google Sans, sans-serif' }}
-                  >
+                    style={{ fontFamily: 'Google Sans, sans-serif' }}>
                     <Star className="h-5 w-5 mr-2" />
                     Try Demo Analysis
                   </Button>
@@ -670,7 +608,6 @@ const ResumeAnalysis = () => {
             </CardContent>
           </Card>
         ) : (
-          // Analysis Results
           <div className="space-y-8">
             {/* Results Header */}
             <Card className="border-0 rounded-3xl shadow-lg bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200">
@@ -685,7 +622,7 @@ const ResumeAnalysis = () => {
                         Analysis Complete!
                       </h2>
                       <p className="text-green-700" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                        Resume: {analysisResult.resume_filename} • Analyzed: {new Date(analysisResult.metadata.analyzed_at).toLocaleString()}
+                        Resume: {analysisResult.resume_filename}
                       </p>
                     </div>
                   </div>
@@ -711,49 +648,8 @@ const ResumeAnalysis = () => {
               </CardContent>
             </Card>
 
-            {/* ATS Score Analysis */}
             <ATSScoreCard score={analysisResult.analysis.ats_score} />
-
-            {/* Recommendations */}
             <RecommendationsSection recommendations={analysisResult.analysis.recommendations} />
-
-            {/* Additional ML Insights */}
-            <Card className="border-0 rounded-3xl shadow-lg bg-gradient-to-br from-gray-50 to-gray-100">
-              <CardHeader className="p-8">
-                <CardTitle className="flex items-center space-x-3 text-xl font-medium text-gray-900" style={{ fontFamily: 'Google Sans, sans-serif' }}>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-gray-600 to-gray-700 shadow-md">
-                    <Gauge className="w-5 h-5 text-white" />
-                  </div>
-                  <span>ML Model Insights</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-8 pt-0">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="bg-white rounded-2xl p-6 shadow-sm">
-                    <h4 className="font-medium text-gray-900 mb-3" style={{ fontFamily: 'Google Sans, sans-serif' }}>
-                      Processing Details
-                    </h4>
-                    <div className="space-y-2 text-sm text-gray-600" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                      <p>• Advanced NLP models analyzed content quality</p>
-                      <p>• Computer vision processed document formatting</p>
-                      <p>• ML algorithms evaluated ATS compatibility</p>
-                      <p>• Semantic analysis performed on job alignment</p>
-                    </div>
-                  </div>
-                  <div className="bg-white rounded-2xl p-6 shadow-sm">
-                    <h4 className="font-medium text-gray-900 mb-3" style={{ fontFamily: 'Google Sans, sans-serif' }}>
-                      Analysis Metadata
-                    </h4>
-                    <div className="space-y-2 text-sm text-gray-600" style={{ fontFamily: 'Roboto, sans-serif' }}>
-                      <p>• Processed: {new Date(analysisResult.metadata.analyzed_at).toLocaleString()}</p>
-                      <p>• Model Version: v2.1.3</p>
-                      <p>• Processing Time: ~{Math.random() * 10 + 5 | 0}s</p>
-                      <p>• Confidence Score: {85 + Math.random() * 10 | 0}%</p>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         )}
       </div>
