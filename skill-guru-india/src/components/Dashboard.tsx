@@ -485,7 +485,7 @@ useEffect(() => {
 
       // ✅ Call YOUR local backend (which handles Cloudinary + ML service)
       const response = await fetch(
-        'http://127.0.0.1:8000/api/analyze_resume',
+        'https://student-advisor-portal.onrender.com/api/analyze_resume',
         {
           method: 'POST',
           headers: {
@@ -592,7 +592,7 @@ You have a strong foundation, Shreyash, and I'm excited to see where your talent
 
     // First, check if cached recommendations exist
     const cachedResponse = await fetch(
-      `http://127.0.0.1:8000/api/career-recommendations/cached/${encodeURIComponent(user.email)}`
+      `https://student-advisor-portal.onrender.com/api/career-recommendations/cached/${encodeURIComponent(user.email)}`
     );
 
     if (cachedResponse.ok) {
@@ -609,7 +609,7 @@ You have a strong foundation, Shreyash, and I'm excited to see where your talent
 
     // If no cached recommendations, generate new ones
     const generateResponse = await fetch(
-      `http://127.0.0.1:8000/api/career-recommendations/generate/${encodeURIComponent(user.email)}?use_resume=true&force_refresh=false`,
+      `https://student-advisor-portal.onrender.com/api/career-recommendations/generate/${encodeURIComponent(user.email)}?use_resume=true&force_refresh=false`,
       {
         method: "POST",
         headers: {

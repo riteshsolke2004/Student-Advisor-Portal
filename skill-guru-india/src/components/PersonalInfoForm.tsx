@@ -58,7 +58,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     };
 
     const response = await axios.post(
-      `http://127.0.0.1:8000/api/profile/?user_id=${formData.email}`,
+      `https://student-advisor-portal.onrender.com/api/profile/?user_id=${formData.email}`,
       payload
     );
 

@@ -32,7 +32,7 @@ const SignIn = () => {
     e.preventDefault();
 
     try {                      
-      const res = await fetch("http://127.0.0.1:8000/auth/signin", {
+      const res = await fetch("https://student-advisor-portal.onrender.com/auth/signin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -68,7 +68,7 @@ const SignIn = () => {
     try {
       const { user, idToken } = await signInWithGoogle();
 
-      const res = await fetch("http://127.0.0.1:8000/auth/google", {
+      const res = await fetch("https://student-advisor-portal.onrender.com/auth/google", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -132,7 +132,7 @@ const QuizComponent = () => {
   
   try {
     // ✅ Call YOUR backend (which calls ML service)
-    const response = await fetch('http://127.0.0.1:8000/api/quiz/generate', {
+    const response = await fetch('https://student-advisor-portal.onrender.com/api/quiz/generate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ const handleSubmitQuiz = async () => {
     formData.append('answers', JSON.stringify(userAnswers));
     formData.append('time_spent', timeElapsed.toString());
 
-    const response = await fetch('http://127.0.0.1:8000/api/quiz/submit', {
+    const response = await fetch('https://student-advisor-portal.onrender.com/api/quiz/submit', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('token')}`

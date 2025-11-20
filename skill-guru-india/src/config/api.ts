@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://student-advisor-portal.onrender.com';
 
 export const chatAPI = {
   enhancedChat: `${API_BASE_URL}/api/chat/enhanced`,

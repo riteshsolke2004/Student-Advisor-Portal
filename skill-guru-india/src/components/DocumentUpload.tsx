@@ -183,7 +183,7 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
 
     // ✅ FIXED: URL uses path parameter for email
     const response = await fetch(
-      `http://127.0.0.1:8000/api/documents/upload/${userEmail}`,
+      `https://student-advisor-portal.onrender.com/api/documents/upload/${userEmail}`,
       {
         method: "POST",
         body: formDataPayload,
