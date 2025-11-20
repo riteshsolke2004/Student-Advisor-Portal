@@ -217,7 +217,7 @@ const useWebSocket = (userId: string, onMessage: (msg: Message) => void, onNotif
     }
 // may be error due to change in the url ws://local..
     try {
-      const wsUrl = `ws://127.0.0.1:8000/api/chat/wss/${encodeURIComponent(userId)}`;
+      const wsUrl = `wss://student-advisor-portal.onrender.com/api/chat/wss/${encodeURIComponent(userId)}`;
       wsRef.current = new WebSocket(wsUrl);
 
       wsRef.current.onopen = () => {
