@@ -108,21 +108,7 @@ const Hero = () => {
                   </Link>
                 </Button>
                 
-                {/* Watch Demo Button - WITH Subtle Gemini Border Effect */}
-                <div className="hero-gemini-border-wrapper">
-                  <Button 
-                    size="lg" 
-                    className="hero-gemini-gradient-border h-14 px-8 rounded-full transition-all duration-300 border-2 border-gray-300 hover:border-transparent relative"
-                    style={{ 
-                      fontFamily: 'Google Sans, sans-serif',
-                      backgroundColor: '#ffffff',
-                      color: '#374151'
-                    }}
-                  >
-                    <Play className="mr-3 h-5 w-5" />
-                    Watch Demo
-                  </Button>
-                </div>
+                
               </div>
 
               

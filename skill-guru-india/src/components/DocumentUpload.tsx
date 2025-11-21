@@ -146,79 +146,74 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!isFormValid) {
-    toast({
-      title: "Form incomplete",
-      description: "Please upload your resume and fill in required fields.",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  console.log("🚀 Starting document upload for:", userEmail);
-  setIsLoading(true);
-
-  try {
-    const formDataPayload = new FormData();
-    
-    // ✅ FIXED: Use snake_case to match backend
-    formDataPayload.append('domain', formData.domain);
-    formDataPayload.append('portfolio_url', formData.portfolioUrl);
-    formDataPayload.append('linkedin_url', socialLinks.linkedin);
-    formDataPayload.append('github_url', socialLinks.github);
-    formDataPayload.append('personal_portfolio_url', socialLinks.portfolio);
-    
-    // Add resume file
-    if (resumeFile) {
-      formDataPayload.append('resume', resumeFile.file);
+    e.preventDefault();
+    if (!isFormValid) {
+      toast({
+        title: "Form incomplete",
+        description: "Please upload your resume and fill in required fields.",
+        variant: "destructive",
+      });
+      return;
     }
-    
-    // Add certificate files
-    certificates.forEach((cert) => {
-      formDataPayload.append('certificates', cert.file);
-    });
 
-    console.log("📦 Uploading documents...");
+    console.log("🚀 Starting document upload for:", userEmail);
+    setIsLoading(true);
 
-    // ✅ FIXED: URL uses path parameter for email
-    const response = await fetch(
-      `https://student-advisor-portal.onrender.com/api/documents/upload/${userEmail}`,
-      {
-        method: "POST",
-        body: formDataPayload,
+    try {
+      const formDataPayload = new FormData();
+      
+      formDataPayload.append('domain', formData.domain);
+      formDataPayload.append('portfolio_url', formData.portfolioUrl);
+      formDataPayload.append('linkedin_url', socialLinks.linkedin);
+      formDataPayload.append('github_url', socialLinks.github);
+      formDataPayload.append('personal_portfolio_url', socialLinks.portfolio);
+      
+      if (resumeFile) {
+        formDataPayload.append('resume', resumeFile.file);
       }
-    );
+      
+      certificates.forEach((cert) => {
+        formDataPayload.append('certificates', cert.file);
+      });
 
-    console.log("📡 Response status:", response.status);
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("❌ Server error response:", errorText);
-      throw new Error(`Failed to upload documents: ${response.status} ${errorText}`);
+      console.log("📦 Uploading documents...");
+
+      const response = await fetch(
+        `https://student-advisor-portal.onrender.com/api/documents/upload/${userEmail}`,
+        {
+          method: "POST",
+          body: formDataPayload,
+        }
+      );
+
+      console.log("📡 Response status:", response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("❌ Server error response:", errorText);
+        throw new Error(`Failed to upload documents: ${response.status} ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log("✅ Documents uploaded successfully:", result);
+
+      toast({
+        title: "Documents uploaded successfully!",
+        description: "Your files have been saved securely to Cloudinary.",
+      });
+      
+      onNext();
+    } catch (error: any) {
+      console.error("❌ Failed to upload documents:", error);
+      toast({
+        title: "Upload failed",
+        description: error?.message || "Error uploading documents. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
     }
-
-    const result = await response.json();
-    console.log("✅ Documents uploaded successfully:", result);
-
-    toast({
-      title: "Documents uploaded successfully!",
-      description: "Your files have been saved securely to Cloudinary.",
-    });
-    
-    onNext();
-  } catch (error: any) {
-    console.error("❌ Failed to upload documents:", error);
-    toast({
-      title: "Upload failed",
-      description: error?.message || "Error uploading documents. Please try again.",
-      variant: "destructive",
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
-
+  };
 
   const handleSocialLinkChange = (platform: string, value: string) => {
     setSocialLinks(prev => ({ ...prev, [platform]: value }));
@@ -248,89 +243,101 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
       />
 
       <Layout>
-        {/* ONLY PROGRESS BAR - Below Layout */}
-        <div className="max-w-md mx-auto mb-8 px-6">
-          <div className="flex items-center justify-between text-sm mb-2">
-            <span 
-              className="font-medium text-gray-700"
-              style={{ fontFamily: 'Google Sans, sans-serif' }}
-            >
-              Setup Progress
-            </span>
-            <span className="font-bold text-blue-600">100%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500 ease-out relative overflow-hidden"
-              style={{ width: '100%' }}
-            >
-              <div className="absolute inset-0 bg-white/20 animate-pulse" />
-            </div>
-          </div>
-        </div>
+       
 
         <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-white relative overflow-hidden">
-          {/* Google-style Background Elements */}
+          {/* Background Elements */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute top-1/4 left-10 w-96 h-96 rounded-full bg-gradient-to-br from-blue-400/8 to-purple-400/8 blur-3xl" />
-            <div className="absolute bottom-1/4 right-10 w-80 h-80 rounded-full bg-gradient-to-br from-green-400/6 to-yellow-400/6 blur-3xl" />
+            <div className="absolute top-1/4 left-10 w-72 h-72 sm:w-96 sm:h-96 rounded-full bg-gradient-to-br from-blue-400/8 to-purple-400/8 blur-3xl" />
+            <div className="absolute bottom-1/4 right-10 w-60 h-60 sm:w-80 sm:h-80 rounded-full bg-gradient-to-br from-green-400/6 to-yellow-400/6 blur-3xl" />
           </div>
 
-          <div className="max-w-6xl mx-auto p-6 space-y-8 relative z-10">
-            {/* Google Material Header */}
-            <div className="text-center space-y-6 mb-12">
-              <div className="inline-flex items-center gap-3 px-6 py-3 bg-white border border-blue-200 rounded-full text-sm font-medium text-blue-700 shadow-sm">
-                <span className="material-icons text-base">upload</span>
-                <span style={{ fontFamily: 'Google Sans, sans-serif' }}>Final Step - Document Upload</span>
+          <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-6 sm:space-y-8 relative z-10">
+            {/* Mobile: Compact Progress Dots */}
+              {/* Mobile: Compact Progress Dots */}
+<div className="flex md:hidden items-center justify-center space-x-2 mb-6">
+  {[1, 2, 3].map((step) => {
+
+                  const isActive = step === 3;
+                  const isCompleted = step < 3;
+
+                  return (
+                    <div key={step} className="flex flex-col items-center">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                        isCompleted 
+                          ? 'bg-gradient-to-br from-green-500 to-green-600' 
+                          : isActive 
+                            ? 'bg-gradient-to-br from-blue-600 to-blue-700 ring-2 ring-blue-200' 
+                            : 'bg-gray-300'
+                      }`}>
+                        {isCompleted ? (
+                          <span className="material-icons text-white text-sm">check</span>
+                        ) : (
+                          <span className={`text-xs font-medium ${
+                            isActive ? 'text-white' : 'text-gray-600'
+                          }`}>
+                            {step}
+                          </span>
+                        )}
+                      </div>
+                      <span className={`mt-1 text-xs font-medium ${
+                        isActive ? 'text-blue-600' : 'text-gray-500'
+                      }`} style={{ fontFamily: 'Roboto, sans-serif' }}>
+                        Step {step}
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
 
-              <h1 
-                className="text-4xl lg:text-5xl font-normal text-gray-900 leading-tight"
+
+               <CardHeader className="text-center p-6 sm:p-8 lg:p-12 bg-gradient-to-br from-blue-50 to-purple-50 border-b border-gray-100">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 lg:w-20 lg:h-20 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                <span className="material-icons text-white text-2xl sm:text-3xl">description</span>
+              </div>
+              <CardTitle 
+                className="text-xl sm:text-2xl lg:text-3xl font-medium text-gray-900 mb-3 sm:mb-4"
                 style={{ fontFamily: 'Google Sans, sans-serif' }}
               >
-                Complete Your
-                <span className="block bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent font-medium mt-2">
-                  Professional Profile
-                </span>
-              </h1>
-
-              <p 
-                className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed"
+                Document Upload
+              </CardTitle>
+              <CardDescription 
+                className="text-sm sm:text-base lg:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed px-2"
                 style={{ fontFamily: 'Roboto, sans-serif' }}
               >
-                Upload your documents and add professional links to create a complete profile 
-                with <span className="font-medium text-blue-600">AI-powered insights</span>.
-              </p>
-            </div>
+                Upload your resume and certificates to get 
+                <span className="font-medium text-blue-600"> personalized recommendations</span>.
+              </CardDescription>
+            </CardHeader>
             
-            {/* Main Content Grid */}
-            <div className="grid lg:grid-cols-3 gap-8">
+            {/* Main Content - Responsive Grid */}
+            <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
               {/* Left Column - Form Fields */}
-              <div className="lg:col-span-2 space-y-8">
+              <div className="lg:col-span-2 space-y-4 sm:space-y-6 lg:space-y-8">
                 {/* Professional Domain Card */}
-                <Card className="border-0 rounded-3xl shadow-lg bg-white hover:shadow-xl transition-all duration-300">
-                  <CardHeader className="p-8">
+                <Card className="border-0 rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg bg-white hover:shadow-xl transition-all duration-300">
+                  <CardHeader className="p-4 sm:p-6 lg:p-8">
                     <CardTitle 
-                      className="flex items-center gap-3 text-xl font-medium text-gray-900"
+                      className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg lg:text-xl font-medium text-gray-900"
                       style={{ fontFamily: 'Google Sans, sans-serif' }}
                     >
-                      <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl flex items-center justify-center shadow-lg">
-                        <span className="material-icons text-white text-xl">work</span>
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                        <span className="material-icons text-white text-lg sm:text-xl">work</span>
                       </div>
-                      Professional Information
+                      <span>Professional Information</span>
                     </CardTitle>
                     <CardDescription 
-                      className="text-gray-600 text-lg mt-2"
+                      className="text-gray-600 text-sm sm:text-base lg:text-lg mt-2"
                       style={{ fontFamily: 'Roboto, sans-serif' }}
                     >
-                      Tell us about your professional expertise and portfolio
+                      Tell us about your professional expertise
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-8 pt-0 space-y-6">
-                    <div className="space-y-3">
+                  <CardContent className="p-4 sm:p-6 lg:p-8 pt-0 space-y-4 sm:space-y-6">
+                    <div className="space-y-2 sm:space-y-3">
                       <Label 
                         htmlFor="domain" 
-                        className="text-base font-medium text-gray-900 flex items-center gap-2"
+                        className="text-sm sm:text-base font-medium text-gray-900 flex items-center gap-2"
                         style={{ fontFamily: 'Google Sans, sans-serif' }}
                       >
                         <span className="material-icons text-blue-600 text-sm">business_center</span>
@@ -338,19 +345,19 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                       </Label>
                       <Input
                         id="domain"
-                        placeholder="e.g., Software Development, Data Science, UI/UX Design"
+                        placeholder="e.g., Software Development"
                         value={formData.domain}
                         onChange={(e) => handleInputChange("domain", e.target.value)}
-                        className="h-12 rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-white text-base transition-all duration-200"
+                        className="h-11 sm:h-12 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 bg-white text-sm sm:text-base transition-all duration-200"
                         style={{ fontFamily: 'Roboto, sans-serif' }}
                         required
                       />
                     </div>
 
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       <Label 
                         htmlFor="portfolioUrl"
-                        className="text-base font-medium text-gray-900 flex items-center gap-2"
+                        className="text-sm sm:text-base font-medium text-gray-900 flex items-center gap-2"
                         style={{ fontFamily: 'Google Sans, sans-serif' }}
                       >
                         <span className="material-icons text-green-600 text-sm">language</span>
@@ -362,39 +369,39 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                           placeholder="https://your-portfolio.com"
                           value={formData.portfolioUrl}
                           onChange={(e) => handleInputChange("portfolioUrl", e.target.value)}
-                          className="h-12 pl-4 pr-12 rounded-2xl border-2 border-gray-200 focus:border-green-500 focus:ring-0 bg-white text-base transition-all duration-200"
+                          className="h-11 sm:h-12 pl-4 pr-10 sm:pr-12 rounded-xl sm:rounded-2xl border-2 border-gray-200 focus:border-green-500 focus:ring-0 bg-white text-sm sm:text-base transition-all duration-200"
                           style={{ fontFamily: 'Roboto, sans-serif' }}
                         />
-                        <ExternalLink className="absolute right-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <ExternalLink className="absolute right-3 sm:right-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Document Upload Cards */}
-                <form onSubmit={handleSubmit} className="space-y-8">
-                  {/* Resume Upload */}
-                  <Card className="border-0 rounded-3xl shadow-lg bg-white hover:shadow-xl transition-all duration-300">
-                    <CardHeader className="p-8">
+                {/* Document Upload Form */}
+                <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6 lg:space-y-8">
+                  {/* Resume Upload - Mobile Optimized */}
+                  <Card className="border-0 rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg bg-white hover:shadow-xl transition-all duration-300">
+                    <CardHeader className="p-4 sm:p-6 lg:p-8">
                       <CardTitle 
-                        className="flex items-center gap-3 text-xl font-medium text-gray-900"
+                        className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg lg:text-xl font-medium text-gray-900"
                         style={{ fontFamily: 'Google Sans, sans-serif' }}
                       >
-                        <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg">
-                          <span className="material-icons text-white text-xl">description</span>
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                          <span className="material-icons text-white text-lg sm:text-xl">description</span>
                         </div>
-                        Resume/CV Upload *
+                        <span>Resume/CV Upload *</span>
                       </CardTitle>
                       <CardDescription 
-                        className="text-gray-600 text-lg mt-2"
+                        className="text-gray-600 text-sm sm:text-base lg:text-lg mt-2"
                         style={{ fontFamily: 'Roboto, sans-serif' }}
                       >
-                        Upload your latest resume or curriculum vitae
+                        Upload your latest resume
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="p-8 pt-0">
+                    <CardContent className="p-4 sm:p-6 lg:p-8 pt-0">
                       <div
-                        className={`relative border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer transition-all duration-300 ${
+                        className={`relative border-2 border-dashed rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 text-center cursor-pointer transition-all duration-300 ${
                           isDragging 
                             ? "border-blue-500 bg-blue-50 shadow-lg transform scale-105" 
                             : resumeFile 
@@ -415,23 +422,25 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                         />
                         
                         {resumeFile ? (
-                          <div className="space-y-4">
-                            <div className="w-16 h-16 bg-green-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg">
-                              <span className="material-icons text-white text-2xl">check_circle</span>
+                          <div className="space-y-3 sm:space-y-4">
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-green-500 rounded-xl sm:rounded-2xl mx-auto flex items-center justify-center shadow-lg">
+                              <span className="material-icons text-white text-xl sm:text-2xl">check_circle</span>
                             </div>
-                            <div className="bg-white rounded-2xl p-6 shadow-sm">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                  {getFileIcon(resumeFile.type)}
-                                  <div className="text-left">
+                            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-sm">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                                  <div className="flex-shrink-0">
+                                    {getFileIcon(resumeFile.type)}
+                                  </div>
+                                  <div className="text-left min-w-0">
                                     <p 
-                                      className="font-medium text-gray-900"
+                                      className="font-medium text-gray-900 text-sm sm:text-base truncate"
                                       style={{ fontFamily: 'Google Sans, sans-serif' }}
                                     >
                                       {resumeFile.name}
                                     </p>
                                     <p 
-                                      className="text-sm text-gray-500"
+                                      className="text-xs sm:text-sm text-gray-500"
                                       style={{ fontFamily: 'Roboto, sans-serif' }}
                                     >
                                       {formatFileSize(resumeFile.size)}
@@ -442,7 +451,7 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  className="h-10 w-10 rounded-full hover:bg-red-50 hover:text-red-600"
+                                  className="h-8 w-8 sm:h-10 sm:w-10 rounded-full hover:bg-red-50 hover:text-red-600 flex-shrink-0"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     removeFile("resume");
@@ -454,27 +463,30 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                             </div>
                           </div>
                         ) : (
-                          <div className="space-y-4">
-                            <div className="w-16 h-16 bg-blue-100 rounded-2xl mx-auto flex items-center justify-center">
-                              <span className="material-icons text-blue-600 text-2xl">cloud_upload</span>
+                          <div className="space-y-3 sm:space-y-4">
+                            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-blue-100 rounded-xl sm:rounded-2xl mx-auto flex items-center justify-center">
+                              <span className="material-icons text-blue-600 text-xl sm:text-2xl">cloud_upload</span>
                             </div>
                             <div>
                               <h3 
-                                className="text-xl font-medium text-gray-900 mb-2"
+                                className="text-base sm:text-lg lg:text-xl font-medium text-gray-900 mb-2"
                                 style={{ fontFamily: 'Google Sans, sans-serif' }}
                               >
-                                Drop your resume here
+                                <span className="hidden sm:inline">Drop your resume here</span>
+                                <span className="inline sm:hidden">Upload Resume</span>
                               </h3>
                               <p 
-                                className="text-gray-600 mb-4"
+                                className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4"
                                 style={{ fontFamily: 'Roboto, sans-serif' }}
                               >
-                                Drag and drop your resume here, or click to browse files
+                                <span className="hidden sm:inline">Drag and drop your resume here, or </span>
+                                <span className="inline sm:hidden">Tap to </span>
+                                click to browse
                               </p>
-                              <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                              <div className="flex items-center justify-center gap-1 sm:gap-2 text-xs text-gray-500">
                                 <span className="material-icons text-xs">info</span>
                                 <span style={{ fontFamily: 'Roboto, sans-serif' }}>
-                                  Supports PDF, DOC, and DOCX files
+                                  PDF, DOC, DOCX
                                 </span>
                               </div>
                             </div>
@@ -484,29 +496,29 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                     </CardContent>
                   </Card>
 
-                  {/* Certificates Upload */}
-                  <Card className="border-0 rounded-3xl shadow-lg bg-white hover:shadow-xl transition-all duration-300">
-                    <CardHeader className="p-8">
+                  {/* Certificates Upload - Mobile Optimized */}
+                  <Card className="border-0 rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg bg-white hover:shadow-xl transition-all duration-300">
+                    <CardHeader className="p-4 sm:p-6 lg:p-8">
                       <CardTitle 
-                        className="flex items-center gap-3 text-xl font-medium text-gray-900"
+                        className="flex items-center gap-2 sm:gap-3 text-base sm:text-lg lg:text-xl font-medium text-gray-900 flex-wrap"
                         style={{ fontFamily: 'Google Sans, sans-serif' }}
                       >
-                        <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg">
-                          <span className="material-icons text-white text-xl">military_tech</span>
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-xl sm:rounded-2xl flex items-center justify-center shadow-lg flex-shrink-0">
+                          <span className="material-icons text-white text-lg sm:text-xl">military_tech</span>
                         </div>
-                        Certificates & Awards
-                        <span className="text-sm text-gray-500 font-normal">(Optional)</span>
+                        <span>Certificates & Awards</span>
+                        <span className="text-xs sm:text-sm text-gray-500 font-normal">(Optional)</span>
                       </CardTitle>
                       <CardDescription 
-                        className="text-gray-600 text-lg mt-2"
+                        className="text-gray-600 text-sm sm:text-base lg:text-lg mt-2"
                         style={{ fontFamily: 'Roboto, sans-serif' }}
                       >
-                        Showcase your certifications and achievements
+                        Showcase your certifications
                       </CardDescription>
                     </CardHeader>
-                    <CardContent className="p-8 pt-0 space-y-6">
+                    <CardContent className="p-4 sm:p-6 lg:p-8 pt-0 space-y-4 sm:space-y-6">
                       <div
-                        className={`border-2 border-dashed rounded-3xl p-8 text-center cursor-pointer transition-all duration-300 ${
+                        className={`border-2 border-dashed rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 text-center cursor-pointer transition-all duration-300 ${
                           isDragging 
                             ? "border-orange-500 bg-orange-50 shadow-lg transform scale-105" 
                             : "border-gray-300 hover:border-orange-400 hover:bg-orange-50"
@@ -525,27 +537,27 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                           className="hidden"
                         />
                         
-                        <div className="space-y-4">
-                          <div className="w-16 h-16 bg-orange-100 rounded-2xl mx-auto flex items-center justify-center">
-                            <span className="material-icons text-orange-600 text-2xl">folder_open</span>
+                        <div className="space-y-3 sm:space-y-4">
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-orange-100 rounded-xl sm:rounded-2xl mx-auto flex items-center justify-center">
+                            <span className="material-icons text-orange-600 text-xl sm:text-2xl">folder_open</span>
                           </div>
                           <div>
                             <h3 
-                              className="text-xl font-medium text-gray-900 mb-2"
+                              className="text-base sm:text-lg lg:text-xl font-medium text-gray-900 mb-2"
                               style={{ fontFamily: 'Google Sans, sans-serif' }}
                             >
                               Upload certificates
                             </h3>
                             <p 
-                              className="text-gray-600 mb-4"
+                              className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4"
                               style={{ fontFamily: 'Roboto, sans-serif' }}
                             >
-                              Add multiple certificates, awards, or achievement documents
+                              Add multiple certificates or awards
                             </p>
-                            <div className="flex items-center justify-center gap-2 text-sm text-gray-500">
+                            <div className="flex items-center justify-center gap-1 sm:gap-2 text-xs text-gray-500">
                               <span className="material-icons text-xs">info</span>
                               <span style={{ fontFamily: 'Roboto, sans-serif' }}>
-                                Supports PDF, DOC, and image files (multiple files allowed)
+                                PDF, DOC, JPG, PNG
                               </span>
                             </div>
                           </div>
@@ -555,25 +567,27 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                       {certificates.length > 0 && (
                         <div className="space-y-3">
                           <h4 
-                            className="font-medium text-gray-900 mb-4"
+                            className="font-medium text-gray-900 mb-3 sm:mb-4 text-sm sm:text-base"
                             style={{ fontFamily: 'Google Sans, sans-serif' }}
                           >
                             Uploaded Certificates ({certificates.length})
                           </h4>
                           {certificates.map((cert, index) => (
-                            <div key={index} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                  {getFileIcon(cert.type)}
-                                  <div>
+                            <div key={index} className="bg-white rounded-xl sm:rounded-2xl p-3 sm:p-4 shadow-sm border border-gray-100">
+                              <div className="flex items-center justify-between gap-3">
+                                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                                  <div className="flex-shrink-0">
+                                    {getFileIcon(cert.type)}
+                                  </div>
+                                  <div className="min-w-0">
                                     <p 
-                                      className="font-medium text-gray-900"
+                                      className="font-medium text-gray-900 text-sm sm:text-base truncate"
                                       style={{ fontFamily: 'Google Sans, sans-serif' }}
                                     >
                                       {cert.name}
                                     </p>
                                     <p 
-                                      className="text-sm text-gray-500"
+                                      className="text-xs sm:text-sm text-gray-500"
                                       style={{ fontFamily: 'Roboto, sans-serif' }}
                                     >
                                       {formatFileSize(cert.size)}
@@ -584,7 +598,7 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  className="h-10 w-10 rounded-full hover:bg-red-50 hover:text-red-600"
+                                  className="h-8 w-8 sm:h-10 sm:w-10 rounded-full hover:bg-red-50 hover:text-red-600 flex-shrink-0"
                                   onClick={() => removeFile("certificate", index)}
                                 >
                                   <X className="w-4 h-4" />
@@ -597,35 +611,37 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                     </CardContent>
                   </Card>
 
-                  {/* Navigation Buttons */}
-                  <Card className="border-0 rounded-3xl shadow-lg bg-white">
-                    <CardContent className="p-8">
-                      <div className="flex justify-between items-center">
+                  {/* Navigation Buttons - Mobile Responsive */}
+                  <Card className="border-0 rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg bg-white">
+                    <CardContent className="p-4 sm:p-6 lg:p-8">
+                      <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center gap-3 sm:gap-4">
                         <Button 
                           type="button" 
                           variant="outline" 
                           onClick={onBack}
-                          className="h-12 px-6 rounded-2xl border-2 border-gray-300 hover:bg-gray-50 transition-all duration-300"
+                          className="h-11 sm:h-12 px-4 sm:px-6 rounded-xl sm:rounded-2xl border-2 border-gray-300 hover:bg-gray-50 transition-all duration-300 text-sm sm:text-base min-h-[44px]"
                           style={{ fontFamily: 'Google Sans, sans-serif' }}
                         >
-                          <span className="material-icons mr-2">arrow_back</span>
+                          <span className="material-icons mr-2 text-lg">arrow_back</span>
                           Back
                         </Button>
                         <Button 
                           type="submit" 
                           disabled={!isFormValid || isLoading}
-                          className="h-12 px-8 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50"
+                          className="h-11 sm:h-12 px-6 sm:px-8 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl sm:rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 text-sm sm:text-base min-h-[44px]"
                           style={{ fontFamily: 'Google Sans, sans-serif' }}
                         >
                           {isLoading ? (
                             <>
-                              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                              Uploading Documents...
+                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                              <span className="hidden sm:inline">Uploading Documents...</span>
+                              <span className="inline sm:hidden">Uploading...</span>
                             </>
                           ) : (
                             <>
-                              <span className="material-icons mr-2">rocket_launch</span>
-                              Complete Setup
+                              <span className="material-icons mr-2 text-lg">rocket_launch</span>
+                              <span className="hidden sm:inline">Complete Setup</span>
+                              <span className="inline sm:hidden">Complete</span>
                               <ArrowRight className="w-4 h-4 ml-2" />
                             </>
                           )}
@@ -636,30 +652,30 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                 </form>
               </div>
 
-              {/* Right Column - Social Links & Info */}
-              <div className="space-y-6">
+              {/* Right Column - Social Links & Info - Mobile Stacks Below */}
+              <div className="space-y-4 sm:space-y-6">
                 {/* Social Links Card */}
-                <Card className="border-0 rounded-3xl shadow-lg bg-white hover:shadow-xl transition-all duration-300">
-                  <CardHeader className="p-6">
+                <Card className="border-0 rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg bg-white hover:shadow-xl transition-all duration-300">
+                  <CardHeader className="p-4 sm:p-6">
                     <CardTitle 
-                      className="text-lg font-medium text-gray-900 flex items-center gap-2"
+                      className="text-base sm:text-lg font-medium text-gray-900 flex items-center gap-2"
                       style={{ fontFamily: 'Google Sans, sans-serif' }}
                     >
-                      <span className="material-icons text-purple-600">link</span>
+                      <span className="material-icons text-purple-600 text-lg">link</span>
                       Professional Links
                     </CardTitle>
                     <CardDescription 
-                      className="text-gray-600 mt-2"
+                      className="text-gray-600 mt-2 text-xs sm:text-sm"
                       style={{ fontFamily: 'Roboto, sans-serif' }}
                     >
                       Connect your professional profiles
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="p-6 pt-0 space-y-4">
-                    <div className="space-y-3">
+                  <CardContent className="p-4 sm:p-6 pt-0 space-y-3 sm:space-y-4">
+                    <div className="space-y-2 sm:space-y-3">
                       <Label 
                         htmlFor="linkedin"
-                        className="flex items-center gap-2 text-sm font-medium text-gray-700"
+                        className="flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700"
                         style={{ fontFamily: 'Google Sans, sans-serif' }}
                       >
                         <Linkedin className="w-4 h-4 text-blue-600" />
@@ -667,18 +683,18 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                       </Label>
                       <Input
                         id="linkedin"
-                        placeholder="https://linkedin.com/in/yourprofile"
+                        placeholder="linkedin.com/in/yourprofile"
                         value={socialLinks.linkedin}
                         onChange={(e) => handleSocialLinkChange("linkedin", e.target.value)}
-                        className="h-10 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0"
+                        className="h-10 sm:h-10 rounded-xl border-2 border-gray-200 focus:border-blue-500 focus:ring-0 text-sm"
                         style={{ fontFamily: 'Roboto, sans-serif' }}
                       />
                     </div>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       <Label 
                         htmlFor="github"
-                        className="flex items-center gap-2 text-sm font-medium text-gray-700"
+                        className="flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700"
                         style={{ fontFamily: 'Google Sans, sans-serif' }}
                       >
                         <Github className="w-4 h-4 text-gray-900" />
@@ -686,18 +702,18 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                       </Label>
                       <Input
                         id="github"
-                        placeholder="https://github.com/yourusername"
+                        placeholder="github.com/yourusername"
                         value={socialLinks.github}
                         onChange={(e) => handleSocialLinkChange("github", e.target.value)}
-                        className="h-10 rounded-xl border-2 border-gray-200 focus:border-gray-500 focus:ring-0"
+                        className="h-10 sm:h-10 rounded-xl border-2 border-gray-200 focus:border-gray-500 focus:ring-0 text-sm"
                         style={{ fontFamily: 'Roboto, sans-serif' }}
                       />
                     </div>
                     
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       <Label 
                         htmlFor="personal-portfolio"
-                        className="flex items-center gap-2 text-sm font-medium text-gray-700"
+                        className="flex items-center gap-2 text-xs sm:text-sm font-medium text-gray-700"
                         style={{ fontFamily: 'Google Sans, sans-serif' }}
                       >
                         <Globe className="w-4 h-4 text-green-600" />
@@ -705,10 +721,10 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                       </Label>
                       <Input
                         id="personal-portfolio"
-                        placeholder="https://yourwebsite.com"
+                        placeholder="yourwebsite.com"
                         value={socialLinks.portfolio}
                         onChange={(e) => handleSocialLinkChange("portfolio", e.target.value)}
-                        className="h-10 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-0"
+                        className="h-10 sm:h-10 rounded-xl border-2 border-gray-200 focus:border-green-500 focus:ring-0 text-sm"
                         style={{ fontFamily: 'Roboto, sans-serif' }}
                       />
                     </div>
@@ -716,37 +732,37 @@ export const DocumentUpload = ({ onNext, onBack, userEmail }: DocumentUploadProp
                 </Card>
 
                 {/* Security Info Card */}
-                <Card className="border-0 rounded-3xl shadow-lg bg-gradient-to-br from-green-50 to-blue-50">
-                  <CardContent className="p-6">
-                    <div className="text-center space-y-4">
-                      <div className="w-12 h-12 bg-green-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg">
-                        <span className="material-icons text-white">shield</span>
+                <Card className="border-0 rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg bg-gradient-to-br from-green-50 to-blue-50">
+                  <CardContent className="p-4 sm:p-6">
+                    <div className="text-center space-y-3 sm:space-y-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-500 rounded-xl sm:rounded-2xl mx-auto flex items-center justify-center shadow-lg">
+                        <span className="material-icons text-white text-lg sm:text-xl">shield</span>
                       </div>
                       <div>
                         <h3 
-                          className="text-lg font-medium text-gray-900 mb-2"
+                          className="text-base sm:text-lg font-medium text-gray-900 mb-2"
                           style={{ fontFamily: 'Google Sans, sans-serif' }}
                         >
                           Secure Upload
                         </h3>
                         <p 
-                          className="text-sm text-gray-600"
+                          className="text-xs sm:text-sm text-gray-600"
                           style={{ fontFamily: 'Roboto, sans-serif' }}
                         >
-                          Your documents are encrypted and stored securely with enterprise-grade protection.
+                          Your documents are encrypted and stored securely.
                         </p>
                       </div>
                       <div className="flex items-center justify-center gap-2 text-xs text-green-600">
-                        <span className="material-icons text-sm">verified</span>
+                        <span className="material-icons text-xs sm:text-sm">verified</span>
                         <span style={{ fontFamily: 'Roboto, sans-serif' }}>SSL Encrypted</span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Progress Summary */}
-                <Card className="border-0 rounded-3xl shadow-lg bg-gradient-to-br from-blue-50 to-purple-50">
-                  <CardContent className="p-6">
+                {/* Progress Summary - Mobile Hidden, Tablet+ Visible */}
+                <Card className="hidden md:block border-0 rounded-2xl sm:rounded-3xl shadow-md sm:shadow-lg bg-gradient-to-br from-blue-50 to-purple-50">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="space-y-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center shadow-md">
