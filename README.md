@@ -4,6 +4,7 @@
 > Built during the **Google Gen-AI Hackathon 2025**, this platform helps students and job seekers discover ideal career paths, bridge skill gaps, and connect with mentors and communities — powered by **Google Vertex AI** and **Gemini models**.
 
 ---
+## 🚀 Live URL:-    https://student-advisor-portal.vercel.app/
 
 ## 🚀 Features
 
