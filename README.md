@@ -6,7 +6,7 @@
 ---
 ## 🚀 Live URL:-    https://student-advisor-portal.vercel.app/
 
-## 🚀 Features
+## 🚀 Features 
 
 ✅ **Student Profiling Engine** – Builds a detailed profile from academic data, personality insights, and aspirations.  
 ✅ **Career Path Recommendation Engine** – Personalized career suggestions using Gemini + Vertex AI.  
